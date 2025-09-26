@@ -20,7 +20,7 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        run: npm Install dependencies
+        run: npm install
 
       - name: Build project
         run: npm run build
@@ -29,42 +29,43 @@ jobs:
     name: Deploy to Vercel (Development)
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/head/dev'
+    if: github.ref == 'refs/heads/dev'
     steps:
       - uses: actions/checkout@v3
 
-      - name: use Node.js 22
+      - name: Use Node.js 22
         uses: actions/setup-node@v3
         with:
           node-version: '22'
 
-      - name: Install vercel Cli
+      - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: Pull Vercel Enviromental Variables
-        run: vercel pull --yes --token${{ secrets.VERCEL_TOKEN}}
+      - name: Pull Vercel Environmental Variables
+        run: vercel pull --yes --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Trigger Vercel Development
-        run: vercel deploy --no-wait --token=${{secrets.VERCEL_TOKEN}}
+        run: vercel deploy --no-wait --token=${{ secrets.VERCEL_TOKEN }}
 
   Deploy-Production:
     name: Deploy to Vercel (Production)
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/head/main'
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
 
-      - name: use Node.js 22
+      - name: Use Node.js 22
         uses: actions/setup-node@v3
         with:
           node-version: '22'
 
-      - name: Install vercel Cli
+      - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: Pull Vercel Enviromental Variables
-        run: vercel pull --yes --token${{ secrets.VERCEL_TOKEN}}
+      - name: Pull Vercel Environmental Variables
+        run: vercel pull --yes --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Trigger Vercel Development
-        run: vercel deploy --prod --no-wait --token=${{secrets.VERCEL_TOKEN}}
+      - name: Trigger Vercel Production
+        run: vercel deploy --prod --no-wait --token=${{ secrets.VERCEL_TOKEN }}
+
