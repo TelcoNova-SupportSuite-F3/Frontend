@@ -42,10 +42,10 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Pull Vercel Environmental Variables
-        run: vercel pull --yes --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --token $VERCEL_TOKEN
 
       - name: Trigger Vercel Development
-        run: vercel deploy --no-wait --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --no-wait --token $VERCEL_TOKEN
 
   Deploy-Production:
     name: Deploy to Vercel (Production)
@@ -64,8 +64,8 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Pull Vercel Environmental Variables
-        run: vercel pull --yes --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --token $VERCEL_TOKEN
 
       - name: Trigger Vercel Production
-        run: vercel deploy --prod --no-wait --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prod --no-wait --token $VERCEL_TOKEN
 
