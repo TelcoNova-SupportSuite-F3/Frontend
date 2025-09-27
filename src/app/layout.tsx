@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang='es'>
       <head>
-        <script src='/console-silencer.js'></script>
+        <script src='/console-silencer.js' async></script>
       </head>
       <body
         className={cn(geistSans.variable, geistMono.variable, 'antialiased')}
