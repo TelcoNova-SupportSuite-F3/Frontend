@@ -3,6 +3,7 @@
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
@@ -18,8 +19,8 @@ export default function Home() {
 
   // Mostrar loading mientras redirecciona
   return (
-    <div className='min-h-screen flex items-center justify-center'>
-      <div className='text-blue-600'>Cargando...</div>
-    </div>
+    <main className={cn('min-h-screen flex items-center justify-center')}>
+      <section className={cn('text-primary')}>Cargando...</section>
+    </main>
   );
 }

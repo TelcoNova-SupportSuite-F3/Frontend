@@ -1,22 +1,28 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
-export default function BackButton() {
-  const router = useRouter();
+interface BackButtonProps {
+  className?: string;
+}
 
-  const handleBack = () => {
-    router.push('/orders');
-  };
-
+export default function BackButton({ className }: BackButtonProps) {
   return (
-    <Button
-      variant='ghost'
-      onClick={handleBack}
-      className='mb-2 text-blue-600 hover:text-blue-700'
+    <Link
+      href='/orders'
+      className={cn(
+        'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors',
+        'mb-2 text-primary hover:text-primary/90 hover:bg-accent hover:text-accent-foreground',
+        'h-10 px-4 py-2',
+        className
+      )}
+      aria-label='Volver a la lista de órdenes de trabajo'
+      role='button'
     >
-      ← Volver a Mis ordenes
-    </Button>
+      <span aria-hidden='true'>←</span>
+      <span className='ml-1'>Volver a Mis ordenes</span>
+    </Link>
   );
 }

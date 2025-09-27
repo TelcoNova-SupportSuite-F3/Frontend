@@ -4,14 +4,20 @@ import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { submitComment } from '@/lib/order-actions';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface OrderCommentsProps {
   orderId: string;
+  className?: string;
 }
 
-export default function OrderComments({ orderId }: OrderCommentsProps) {
+export default function OrderComments({
+  orderId,
+  className,
+}: OrderCommentsProps) {
   const [comment, setComment] = useState('');
   const [isPending, startTransition] = useTransition();
 
@@ -64,31 +70,67 @@ export default function OrderComments({ orderId }: OrderCommentsProps) {
   };
 
   return (
-    <Card>
-      <CardContent className='p-6'>
-        <div className='space-y-4'>
-          <Textarea
-            placeholder='Escriba un comentario...'
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className='min-h-[120px] resize-none'
-            disabled={isPending}
-            maxLength={1000}
-          />
+    <Card
+      className={cn(className)}
+      role='region'
+      aria-label='Comentarios de la orden'
+    >
+      <CardContent className={cn('p-6')}>
+        <div className={cn('space-y-4')}>
+          <div className={cn('space-y-2')}>
+            <Label
+              htmlFor={`comment-${orderId}`}
+              className={cn('text-base font-medium')}
+            >
+              Agregar comentario
+            </Label>
+            <Textarea
+              id={`comment-${orderId}`}
+              placeholder='Escriba un comentario sobre la orden...'
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className={cn('min-h-[120px] resize-none')}
+              disabled={isPending}
+              maxLength={1000}
+              aria-describedby={`comment-help-${orderId} comment-counter-${orderId}`}
+              aria-label='Campo de texto para escribir comentario'
+            />
+            <div id={`comment-help-${orderId}`} className='sr-only'>
+              Escribe un comentario sobre esta orden de trabajo. Máximo 1000
+              caracteres. Usa Ctrl+Enter para enviar rápidamente.
+            </div>
+          </div>
 
-          <div className='flex items-center justify-between'>
-            <span className='text-xs text-gray-500'>
+          <div className={cn('flex items-center justify-between')}>
+            <span
+              id={`comment-counter-${orderId}`}
+              className={cn('text-xs text-gray-500')}
+              role='status'
+              aria-live='polite'
+              aria-label={`${comment.length} de 1000 caracteres utilizados`}
+            >
               {comment.length}/1000 caracteres
               {comment.length > 0 && ' • Ctrl+Enter para enviar'}
             </span>
             <Button
               onClick={handleSubmit}
-              className='bg-blue-600 hover:bg-blue-700 text-white'
+              className={cn('bg-primary hover:bg-primary/90 text-white')}
               disabled={!comment.trim() || isPending}
+              aria-describedby={`submit-status-${orderId}`}
+              aria-label={
+                isPending ? 'Enviando comentario' : 'Enviar comentario'
+              }
             >
               {isPending ? 'Enviando...' : 'Enviar comentario'}
             </Button>
+            <div
+              id={`submit-status-${orderId}`}
+              className='sr-only'
+              aria-live='polite'
+            >
+              {isPending ? 'Enviando comentario, por favor espera' : ''}
+            </div>
           </div>
         </div>
       </CardContent>

@@ -3,6 +3,7 @@ import OrderComments from '@/components/OrderComments/OrderComments';
 import OrderTimeTracker from '@/components/OrderTimeTracker/OrderTimeTracker';
 import MaterialsSection from '@/components/MaterialsSection/MaterialsSection';
 import BackButton from '@/components/BackButton/BackButton';
+import { cn } from '@/lib/utils';
 
 interface OrderDetailPageProps {
   params: Promise<{
@@ -19,27 +20,29 @@ export default async function OrderDetailPage({
   console.log('🖥️ Server Component - Página Orden:', orderId);
 
   return (
-    <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
+    <main className={cn('space-y-6')}>
+      <header className={cn('flex items-center justify-between')}>
         <div>
           <BackButton />
-          <h2 className='text-3xl font-bold text-blue-900'>Orden de trabajo</h2>
-          <p className='text-blue-600 mt-1'>Orden #{orderId}</p>
+          <h1 className={cn('text-3xl font-bold text-primary')}>
+            Orden de trabajo
+          </h1>
+          <p className={cn('text-primary/80 mt-1')}>Orden #{orderId}</p>
         </div>
-      </div>
+      </header>
 
-      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-        <div className='space-y-6'>
+      <section className={cn('grid grid-cols-1 lg:grid-cols-2 gap-6')}>
+        <div className={cn('space-y-6')}>
           <OrderTimeTracker orderId={orderId} />
           <EvidenceUpload orderId={orderId} />
           <OrderComments orderId={orderId} />
         </div>
 
-        <div className='space-y-6'>
+        <div className={cn('space-y-6')}>
           {/* Solo este widget usa Server Component */}
           <MaterialsSection orderId={orderId} />
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

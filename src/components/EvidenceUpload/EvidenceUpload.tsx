@@ -5,12 +5,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import FileUpload from '../FileUpload/FileUpload';
 import { uploadEvidence } from '../../lib/order-actions';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface EvidenceUploadProps {
   orderId: string;
+  className?: string;
 }
 
-export default function EvidenceUpload({ orderId }: EvidenceUploadProps) {
+export default function EvidenceUpload({
+  orderId,
+  className,
+}: EvidenceUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -42,8 +47,8 @@ export default function EvidenceUpload({ orderId }: EvidenceUploadProps) {
   };
 
   return (
-    <Card>
-      <CardContent className='p-6'>
+    <Card className={cn(className)}>
+      <CardContent className={cn('p-6')}>
         <FileUpload
           onFileSelect={handleFileSelect}
           onUpload={handleUpload}

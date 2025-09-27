@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Upload, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { useState, useRef } from 'react';
+import { cn } from '@/lib/utils';
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
@@ -122,25 +123,35 @@ export default function FileUpload({
   };
 
   return (
-    <div className='space-y-4'>
-      <h3 className='text-lg font-semibold'>Subir evidencia</h3>
+    <div className={cn('space-y-4')} role='region' aria-label='Subir evidencia'>
+      <h3 className={cn('text-lg font-semibold')} id='file-upload-title'>
+        Subir evidencia
+      </h3>
 
       {/* Área de drop */}
       <div
-        className={`
-          border-2 border-dashed rounded-lg p-8 text-center transition-colors
-          ${
-            dragActive
-              ? 'border-blue-400 bg-blue-50'
-              : error
-              ? 'border-red-300 bg-red-50'
-              : 'border-gray-300 hover:border-gray-400'
+        className={cn(
+          'border-2 border-dashed rounded-lg p-8 text-center transition-colors',
+          {
+            'border-primary bg-primary/5': dragActive,
+            'border-destructive bg-destructive/5': error,
+            'border-gray-300 hover:border-gray-400': !dragActive && !error,
           }
-        `}
+        )}
         onDragEnter={handleDragIn}
         onDragLeave={handleDragOut}
         onDragOver={handleDrag}
         onDrop={handleDrop}
+        role='button'
+        tabIndex={0}
+        aria-label='Área para arrastrar y soltar archivos o hacer clic para seleccionar'
+        aria-describedby='file-upload-title file-upload-instructions'
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleBrowseClick();
+          }
+        }}
       >
         <input
           ref={fileInputRef}
@@ -149,13 +160,18 @@ export default function FileUpload({
           onChange={handleInputChange}
           className='hidden'
           disabled={isLoading}
+          aria-describedby='file-upload-instructions'
         />
 
         {!selectedFile ? (
-          <div className='space-y-3'>
-            <Upload className='mx-auto h-12 w-12 text-gray-400' />
-            <div className='space-y-1'>
-              <p className='text-gray-600'>
+          <div className={cn('space-y-3')}>
+            <Upload
+              className={cn('mx-auto h-12 w-12 text-gray-400')}
+              role='img'
+              aria-label='Ícono de subir archivo'
+            />
+            <div className={cn('space-y-1')}>
+              <p className={cn('text-gray-600')} id='file-upload-instructions'>
                 {dragActive
                   ? 'Suelta el archivo aquí'
                   : 'Arrastra una imagen aquí o'}
@@ -163,20 +179,41 @@ export default function FileUpload({
               <Button
                 variant='link'
                 onClick={handleBrowseClick}
-                className='text-blue-600 p-0 h-auto font-normal'
+                className={cn('text-primary p-0 h-auto font-normal')}
                 disabled={isLoading}
+                aria-label='Hacer clic para seleccionar archivo desde el explorador'
               >
                 seleccionar archivo
               </Button>
             </div>
-            <p className='text-xs text-gray-500'>JPG, JPEG, SVG hasta 5MB</p>
+            <p className={cn('text-xs text-gray-500')} role='note'>
+              JPG, JPEG, SVG hasta 5MB
+            </p>
           </div>
         ) : (
-          <div className='space-y-3'>
-            <CheckCircle className='mx-auto h-12 w-12 text-green-500' />
-            <div className='space-y-1'>
-              <p className='font-medium text-gray-900'>{selectedFile.name}</p>
-              <p className='text-sm text-gray-500'>
+          <div
+            className={cn('space-y-3')}
+            role='status'
+            aria-label='Archivo seleccionado'
+          >
+            <CheckCircle
+              className={cn('mx-auto h-12 w-12 text-green-500')}
+              role='img'
+              aria-label='Archivo seleccionado correctamente'
+            />
+            <div className={cn('space-y-1')}>
+              <p
+                className={cn('font-medium text-gray-900')}
+                aria-label={`Nombre del archivo: ${selectedFile.name}`}
+              >
+                {selectedFile.name}
+              </p>
+              <p
+                className={cn('text-sm text-gray-500')}
+                aria-label={`Tamaño del archivo: ${formatFileSize(
+                  selectedFile.size
+                )}`}
+              >
                 {formatFileSize(selectedFile.size)}
               </p>
             </div>
@@ -184,10 +221,17 @@ export default function FileUpload({
               variant='ghost'
               size='sm'
               onClick={handleRemoveFile}
-              className='text-red-600 hover:text-red-700 hover:bg-red-50'
+              className={cn(
+                'text-destructive hover:text-destructive hover:bg-destructive/10'
+              )}
               disabled={isLoading}
+              aria-label={`Remover archivo ${selectedFile.name}`}
             >
-              <X className='h-4 w-4 mr-1' />
+              <X
+                className={cn('h-4 w-4 mr-1')}
+                role='img'
+                aria-label='Ícono de eliminar'
+              />
               Remover
             </Button>
           </div>
@@ -196,8 +240,18 @@ export default function FileUpload({
 
       {/* Error message */}
       {error && (
-        <div className='flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-lg text-sm'>
-          <AlertCircle className='h-4 w-4' />
+        <div
+          className={cn(
+            'flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-lg text-sm'
+          )}
+          role='alert'
+          aria-live='assertive'
+        >
+          <AlertCircle
+            className={cn('h-4 w-4')}
+            role='img'
+            aria-label='Error'
+          />
           {error}
         </div>
       )}
@@ -205,11 +259,20 @@ export default function FileUpload({
       {/* Upload button */}
       <Button
         onClick={onUpload}
-        className='w-full bg-blue-600 hover:bg-blue-700 text-white'
+        className={cn('w-full bg-primary hover:bg-primary/90 text-white')}
         disabled={!selectedFile || isLoading}
+        aria-label={
+          selectedFile
+            ? `Subir archivo ${selectedFile.name}`
+            : 'Selecciona un archivo primero'
+        }
+        aria-describedby='upload-status'
       >
         {isLoading ? 'Subiendo...' : 'Enviar Evidencia'}
       </Button>
+      <div id='upload-status' className='sr-only' aria-live='polite'>
+        {isLoading ? 'Subiendo archivo, por favor espera' : ''}
+      </div>
     </div>
   );
 }

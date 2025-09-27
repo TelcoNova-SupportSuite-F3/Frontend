@@ -1,8 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Image from 'next/image';
+import Link from 'next/link';
 import { ReactNode } from 'react';
 import LogoutButton from '@/components/LogoutButton/LogoutButton';
+import { cn } from '@/lib/utils';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -10,65 +12,118 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className='min-h-screen bg-gray-50 flex'>
-      <div className='w-64 bg-blue-900 text-white flex flex-col'>
-        <div className='p-6 border-b border-blue-800'>
-          <div className='flex items-center space-x-3'>
-            <div className='w-12 h-12 bg-white rounded-full flex items-center justify-center'>
+    <div className={cn('min-h-screen bg-gray-50 flex')}>
+      {/* Skip to main content link for screen readers */}
+      <a
+        href='#main-content'
+        className={cn(
+          'sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4',
+          'bg-primary text-primary-foreground px-4 py-2 rounded-md z-50'
+        )}
+      >
+        Saltar al contenido principal
+      </a>
+
+      <aside
+        className={cn('w-64 bg-primary text-white flex flex-col')}
+        role='navigation'
+        aria-label='Navegación principal'
+      >
+        <header className={cn('p-6 border-b border-primary-foreground/20')}>
+          <div className={cn('flex items-center space-x-3')}>
+            <div
+              className={cn(
+                'w-12 h-12 bg-white rounded-full flex items-center justify-center'
+              )}
+              role='img'
+              aria-label='Logo de TelcoNova'
+            >
               <Image
                 src='/logo.svg'
-                alt='TelcoNova Logo'
+                alt='TelcoNova - Sistema de gestión de órdenes'
                 width={24}
                 height={24}
               />
             </div>
           </div>
           <div>
-            <h1 className='text-lg font-bold text-center'>TelcoNova</h1>
+            <h1 className={cn('text-lg font-bold text-center')}>TelcoNova</h1>
           </div>
-        </div>
+        </header>
 
-        <nav className='flex-1 p-4'>
-          <ul className='space-y-2'>
+        <nav
+          className={cn('flex-1 p-4')}
+          role='navigation'
+          aria-label='Menú de navegación'
+        >
+          <ul className={cn('space-y-2')} role='list'>
             <li>
-              <Button
-                variant='ghost'
-                className='w-full justify-start text-white hover:bg-blue-800 hover:text-white'
+              <Link
+                href='/dashboard'
+                className={cn(
+                  'w-full justify-start text-white hover:bg-primary-foreground/10 hover:text-white',
+                  'inline-flex items-center justify-start whitespace-nowrap rounded-md text-sm font-medium transition-colors',
+                  'h-10 px-4 py-2'
+                )}
+                aria-label='Ir al Dashboard principal'
               >
                 Dashboard
-              </Button>
+              </Link>
             </li>
             <li>
-              <Button
-                variant='ghost'
-                className='w-full justify-start text-white hover:bg-blue-800 hover:text-white bg-blue-800'
+              <Link
+                href='/orders'
+                className={cn(
+                  'w-full justify-start text-white hover:bg-primary-foreground/10 hover:text-white bg-primary-foreground/20',
+                  'inline-flex items-center justify-start whitespace-nowrap rounded-md text-sm font-medium transition-colors',
+                  'h-10 px-4 py-2'
+                )}
+                aria-label='Ver mis órdenes de trabajo'
+                aria-current='page'
               >
                 Mis ordenes
-              </Button>
+              </Link>
             </li>
             <li>
-              <Button
-                variant='ghost'
-                className='w-full justify-start text-white hover:bg-blue-800 hover:text-white'
+              <Link
+                href='/profile'
+                className={cn(
+                  'w-full justify-start text-white hover:bg-primary-foreground/10 hover:text-white',
+                  'inline-flex items-center justify-start whitespace-nowrap rounded-md text-sm font-medium transition-colors',
+                  'h-10 px-4 py-2'
+                )}
+                aria-label='Ver mi perfil de usuario'
               >
                 Mi perfil
-              </Button>
+              </Link>
             </li>
           </ul>
         </nav>
-      </div>
+      </aside>
 
-      <div className='flex-1 flex flex-col'>
-        <header className='bg-white shadow-sm border-b px-6 py-4'>
-          <div className='flex items-center justify-between'>
-            <h1 className='text-2xl font-bold text-gray-900'>
+      <div className={cn('flex-1 flex flex-col')}>
+        <header
+          className={cn('bg-white shadow-sm border-b px-6 py-4')}
+          role='banner'
+        >
+          <div className={cn('flex items-center justify-between')}>
+            <h1 className={cn('text-2xl font-bold text-gray-900')}>
               Panel de técnicos
             </h1>
 
-            <div className='flex items-center space-x-4'>
-              <span className='text-sm text-gray-600'>Nombre de técnico</span>
-              <Avatar>
-                <AvatarFallback className='bg-blue-100 text-blue-900'>
+            <div
+              className={cn('flex items-center space-x-4')}
+              role='region'
+              aria-label='Información de usuario'
+            >
+              <span
+                className={cn('text-sm text-gray-600')}
+                aria-label='Usuario actual'
+              >
+                Nombre de técnico
+              </span>
+              <Avatar role='img' aria-label='Avatar del usuario'>
+                <AvatarFallback className={cn('bg-primary/10 text-primary')}>
                   T
                 </AvatarFallback>
               </Avatar>
@@ -77,7 +132,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </header>
 
-        <main className='flex-1 p-6'>{children}</main>
+        <main
+          id='main-content'
+          className={cn('flex-1 p-6')}
+          role='main'
+          aria-label='Contenido principal'
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

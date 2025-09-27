@@ -6,17 +6,20 @@ import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { updateOrderTimes } from '@/lib/order-actions';
 import { AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface OrderTimeTrackerProps {
   orderId: string;
   initialStartTime?: Date;
   initialEndTime?: Date;
+  className?: string;
 }
 
 export default function OrderTimeTracker({
   orderId,
   initialStartTime,
   initialEndTime,
+  className,
 }: OrderTimeTrackerProps) {
   const [startDateTime, setStartDateTime] = useState<Date | undefined>(
     initialStartTime
@@ -83,17 +86,21 @@ export default function OrderTimeTracker({
   };
 
   return (
-    <Card>
-      <CardContent className='p-6'>
-        <div className='space-y-4'>
+    <Card className={cn(className)}>
+      <CardContent className={cn('p-6')}>
+        <div className={cn('space-y-4')}>
           {dateError && (
-            <div className='flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-lg text-sm'>
-              <AlertCircle className='h-4 w-4' />
+            <div
+              className={cn(
+                'flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-lg text-sm'
+              )}
+            >
+              <AlertCircle className={cn('h-4 w-4')} />
               {dateError}
             </div>
           )}
 
-          <div className='space-y-4'>
+          <div className={cn('space-y-4')}>
             <DateTimePicker
               label='Marcar inicio'
               value={startDateTime}
@@ -113,7 +120,7 @@ export default function OrderTimeTracker({
           </div>
 
           {isPending && (
-            <div className='text-sm text-blue-600 text-center'>
+            <div className={cn('text-sm text-primary text-center')}>
               Guardando cambios...
             </div>
           )}
