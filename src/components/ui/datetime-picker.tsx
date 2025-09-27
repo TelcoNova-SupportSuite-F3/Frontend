@@ -21,6 +21,7 @@ interface DateTimePickerProps {
   className?: string;
   minDate?: Date;
   disabled?: boolean;
+  compact?: boolean;
 }
 
 export function DateTimePicker({
@@ -31,6 +32,7 @@ export function DateTimePicker({
   className,
   minDate,
   disabled = false,
+  compact = false,
 }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false);
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
@@ -102,6 +104,68 @@ export function DateTimePicker({
     return false;
   };
 
+  if (compact) {
+    return (
+      <div className={`space-y-3 ${className}`}>
+        <div className='grid grid-cols-2 gap-3'>
+          <div className='space-y-2'>
+            <Label
+              htmlFor={`date-picker-${label}`}
+              className='text-xs font-medium text-gray-600'
+            >
+              {label}
+            </Label>
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant='outline'
+                  id={`date-picker-${label}`}
+                  className='w-full justify-between font-normal text-sm h-9 px-2'
+                  disabled={disabled}
+                >
+                  <span className='truncate'>
+                    {selectedDate
+                      ? selectedDate.toLocaleDateString('es-ES')
+                      : placeholder}
+                  </span>
+                  <ChevronDownIcon className='h-3 w-3 ml-1 flex-shrink-0' />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className='w-auto overflow-hidden p-0'
+                align='start'
+              >
+                <Calendar
+                  mode='single'
+                  selected={selectedDate}
+                  captionLayout='dropdown'
+                  onSelect={handleDateSelect}
+                  disabled={isDateDisabled}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className='space-y-2'>
+            <Label
+              htmlFor={`time-picker-${label}`}
+              className='text-xs font-medium text-gray-600'
+            >
+              Hora
+            </Label>
+            <Input
+              id={`time-picker-${label}`}
+              type='time'
+              value={timeValue}
+              onChange={(e) => handleTimeChange(e.target.value)}
+              className='w-full h-9 text-sm'
+              disabled={disabled || !selectedDate}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`flex gap-4 ${className}`}>
       <div className='flex flex-col gap-3'>
@@ -119,10 +183,12 @@ export function DateTimePicker({
               className='w-40 justify-between font-normal'
               disabled={disabled}
             >
-              {selectedDate
-                ? selectedDate.toLocaleDateString('es-ES')
-                : placeholder}
-              <ChevronDownIcon className='h-4 w-4' />
+              <span className='truncate'>
+                {selectedDate
+                  ? selectedDate.toLocaleDateString('es-ES')
+                  : placeholder}
+              </span>
+              <ChevronDownIcon className='h-4 w-4 ml-2 flex-shrink-0' />
             </Button>
           </PopoverTrigger>
           <PopoverContent className='w-auto overflow-hidden p-0' align='start'>
@@ -149,7 +215,7 @@ export function DateTimePicker({
           value={timeValue}
           onChange={(e) => handleTimeChange(e.target.value)}
           className='w-32 bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none'
-          disabled={disabled}
+          disabled={disabled || !selectedDate}
         />
       </div>
     </div>

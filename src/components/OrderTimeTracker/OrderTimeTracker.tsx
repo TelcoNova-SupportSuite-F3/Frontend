@@ -100,23 +100,41 @@ export default function OrderTimeTracker({
             </div>
           )}
 
-          <div className={cn('space-y-4')}>
-            <DateTimePicker
-              label='Marcar inicio'
-              value={startDateTime}
-              onChange={handleStartDateChange}
-              placeholder='Seleccionar fecha y hora de inicio'
-              disabled={isPending}
-            />
+          <div className={cn('grid grid-cols-1 md:grid-cols-2 gap-6')}>
+            {/* Mini-contenedor de Inicio */}
+            <div className={cn('border rounded-lg p-4 bg-gray-50/50')}>
+              <h3 className={cn('font-semibold text-sm text-gray-700 mb-3')}>
+                Marcar inicio
+              </h3>
+              <DateTimePicker
+                label='Fecha'
+                value={startDateTime}
+                onChange={handleStartDateChange}
+                placeholder='Seleccionar fecha'
+                disabled={isPending}
+                compact={true}
+              />
+            </div>
 
-            <DateTimePicker
-              label='Marcar fin'
-              value={endDateTime}
-              onChange={handleEndDateChange}
-              placeholder='Seleccionar fecha y hora de fin'
-              minDate={startDateTime}
-              disabled={!startDateTime || isPending}
-            />
+            {/* Mini-contenedor de Fin */}
+            <div
+              className={cn('border rounded-lg p-4 bg-gray-50/50', {
+                'opacity-50': !startDateTime,
+              })}
+            >
+              <h3 className={cn('font-semibold text-sm text-gray-700 mb-3')}>
+                Marcar fin
+              </h3>
+              <DateTimePicker
+                label='Fecha'
+                value={endDateTime}
+                onChange={handleEndDateChange}
+                placeholder='Seleccionar fecha'
+                minDate={startDateTime}
+                disabled={!startDateTime || isPending}
+                compact={true}
+              />
+            </div>
           </div>
 
           {isPending && (
