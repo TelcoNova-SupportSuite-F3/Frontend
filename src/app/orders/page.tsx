@@ -1,13 +1,13 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { useOrdersData } from '@/hooks/useOrdersData';
+import { getOrdersData } from '@/hooks/useOrdersData';
 import OrdersMetrics from '@/components/OrdersMetrics/OrdersMetrics';
 import OrdersTable from '@/components/OrdersTable/OrdersTable';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage';
 import { cn } from '@/lib/utils';
 
 export default async function OrdersPage() {
-  // Cargar datos usando el hook
-  const { orders, summary, error, isAuthenticated } = await useOrdersData();
+  // Cargar datos usando la función server-side
+  const { orders, summary, error, isAuthenticated } = await getOrdersData();
 
   // Caso: No autenticado
   if (!isAuthenticated) {

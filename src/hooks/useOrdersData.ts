@@ -18,7 +18,11 @@ interface OrdersDataResult {
   isAuthenticated: boolean;
 }
 
-export async function useOrdersData(): Promise<OrdersDataResult> {
+/**
+ * Server-side function to load orders data
+ * NOT a React hook - use in Server Components only
+ */
+export async function getOrdersData(): Promise<OrdersDataResult> {
   try {
     // Obtener token del servidor
     const token = await getServerAuthToken();

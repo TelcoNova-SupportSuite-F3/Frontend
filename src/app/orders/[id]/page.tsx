@@ -1,4 +1,4 @@
-import { useOrderDetail } from '@/hooks/useOrderDetail';
+import { getOrderDetail } from '@/hooks/useOrderDetail';
 import OrderDetailHeader from '@/components/OrderDetailHeader/OrderDetailHeader';
 import OrderBasicInfo from '@/components/OrderBasicInfo/OrderBasicInfo';
 import OrderActionsSection from '@/components/OrderActionsSection/OrderActionsSection';
@@ -19,7 +19,7 @@ export default async function OrderDetailPage({
   const orderId = parseInt(orderIdString, 10);
 
   // Cargar datos usando el hook
-  const { order, error, isAuthenticated } = await useOrderDetail(orderId);
+  const { order, error, isAuthenticated } = await getOrderDetail(orderId);
 
   // Caso: No autenticado
   if (!isAuthenticated) {

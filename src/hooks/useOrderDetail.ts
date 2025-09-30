@@ -8,7 +8,11 @@ interface OrderDetailResult {
   isAuthenticated: boolean;
 }
 
-export async function useOrderDetail(
+/**
+ * Server-side function to load order details
+ * NOT a React hook - use in Server Components only
+ */
+export async function getOrderDetail(
   orderId: number
 ): Promise<OrderDetailResult> {
   try {
