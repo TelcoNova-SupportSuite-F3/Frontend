@@ -43,7 +43,7 @@ export default function OrderComments({
             duration: 4000,
           });
         }
-      } catch (error) {
+      } catch {
         toast.error('Error inesperado al enviar comentario', {
           description: 'Verifica tu conexión e intenta nuevamente',
           duration: 5000,

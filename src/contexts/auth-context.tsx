@@ -11,9 +11,8 @@ import {
   fetchAuthUser,
   validateAuthToken,
   isTokenExpired,
-  parseTokenPayload,
 } from '@/services/Login.services';
-import type { User, LoginErrorType, LoginResult } from '@/types/auth';
+import type { User, LoginResult } from '@/types/auth';
 
 interface AuthContextType {
   user: User | null;

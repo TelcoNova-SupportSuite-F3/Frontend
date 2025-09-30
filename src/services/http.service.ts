@@ -47,7 +47,7 @@ export async function makeAuthenticatedClientRequest<T>(
       let errorData;
       try {
         errorData = await response.json();
-      } catch (jsonError) {
+      } catch {
         errorData = {
           message: 'Error de comunicación con el servidor',
           status: response.status,
@@ -175,7 +175,7 @@ export async function testBackendConnectivity(): Promise<boolean> {
     });
 
     return response.ok;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

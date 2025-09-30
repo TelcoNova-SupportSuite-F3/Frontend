@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { searchMaterials } from '@/services/materials.service';
 import type { MaterialResponse } from '@/types/orders';
 

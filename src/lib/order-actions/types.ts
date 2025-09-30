@@ -35,7 +35,7 @@ export interface Order {
 }
 
 // Tiempo
-export interface OrderTimeResult extends ServerActionResult {}
+export type OrderTimeResult = ServerActionResult;
 
 // Utilidades comunes
 export const delay = (ms: number) =>

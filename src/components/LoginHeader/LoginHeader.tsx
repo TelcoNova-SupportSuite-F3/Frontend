@@ -1,4 +1,4 @@
-import { Card, CardHeader } from '@/components/ui/card';
+import { CardHeader } from '@/components/ui/card';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 

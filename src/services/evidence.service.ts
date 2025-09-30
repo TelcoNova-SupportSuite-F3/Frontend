@@ -115,7 +115,7 @@ export async function addOrderComment(
       try {
         errorData = await response.json();
         console.error('❌ Error data from backend:', errorData);
-      } catch (jsonError) {
+      } catch {
         errorData = {
           message: `Error ${response.status}: ${response.statusText}`,
         };

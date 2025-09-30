@@ -62,7 +62,7 @@ export default function MaterialsSectionClient({
     } else {
       searchMaterials.clearSearch();
     }
-  }, [addMaterial.searchTerm]);
+  }, [addMaterial.searchTerm, searchMaterials]);
 
   const handleMaterialSelect = (material: MaterialResponse) => {
     console.log('✅ Material seleccionado:', material);
