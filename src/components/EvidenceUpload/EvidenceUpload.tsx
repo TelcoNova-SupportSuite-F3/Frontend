@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import FileUpload from '../FileUpload/FileUpload';
 import { uploadEvidence } from '../../lib/order-actions';
@@ -16,6 +17,7 @@ export default function EvidenceUpload({
   orderId,
   className,
 }: EvidenceUploadProps) {
+  const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -36,6 +38,9 @@ export default function EvidenceUpload({
         if (result.success) {
           toast.success(result.message);
           setSelectedFile(null);
+
+          // Forzar refresh de la página para mostrar la evidencia agregada
+          router.refresh();
         } else {
           toast.error(result.message);
         }

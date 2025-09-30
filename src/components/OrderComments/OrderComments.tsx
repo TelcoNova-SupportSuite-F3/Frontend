@@ -27,16 +27,9 @@ export default function OrderComments({
       return;
     }
 
-    console.log('🚀 Enviando comentario:', {
-      orderId,
-      length: comment.trim().length,
-    });
-
     startTransition(async () => {
       try {
         const result = await submitComment(orderId, comment.trim());
-
-        console.log('📨 Respuesta recibida:', result);
 
         if (result.success) {
           toast.success(result.message, {
@@ -44,16 +37,13 @@ export default function OrderComments({
             duration: 3000,
           });
           setComment('');
-          console.log('✅ Comentario procesado exitosamente');
         } else {
           toast.error(result.message, {
             description: 'Intenta nuevamente',
             duration: 4000,
           });
-          console.log('❌ Error en comentario:', result.message);
         }
       } catch (error) {
-        console.error('💥 Error inesperado al enviar comentario:', error);
         toast.error('Error inesperado al enviar comentario', {
           description: 'Verifica tu conexión e intenta nuevamente',
           duration: 5000,

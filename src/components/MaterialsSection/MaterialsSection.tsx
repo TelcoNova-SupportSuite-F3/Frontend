@@ -1,22 +1,26 @@
-import { getMaterials } from '@/lib/order-actions';
 import MaterialsSectionClient from './MaterialsSectionClient';
+import type { MaterialUtilizadoResponse } from '@/types/orders';
 
 interface MaterialsSectionProps {
   orderId: string;
+  materialesUtilizados: MaterialUtilizadoResponse[];
 }
 
-export default async function MaterialsSection({
+export default function MaterialsSection({
   orderId,
+  materialesUtilizados,
 }: MaterialsSectionProps) {
-  // Cargar materiales específicamente para este widget
-  const materials = await getMaterials();
-
   console.log(
-    '📦 Server Component - Materiales para orden:',
+    '📦 Server Component - Materiales utilizados en orden:',
     orderId,
     'Count:',
-    materials.length
+    materialesUtilizados.length
   );
 
-  return <MaterialsSectionClient materials={materials} />;
+  return (
+    <MaterialsSectionClient
+      materialesUtilizados={materialesUtilizados}
+      orderId={orderId}
+    />
+  );
 }

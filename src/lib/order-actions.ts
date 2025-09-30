@@ -1,6 +1,13 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
+import {
+  addOrderComment,
+  uploadOrderEvidence,
+} from '@/services/evidence.service';
+import { getServerAuthToken } from '@/lib/auth-server';
+import type { AgregarMaterialRequest, OrderApiResponse } from '@/types/orders';
 
 // Tipos para las diferentes acciones
 export interface EvidenceUploadResult {
@@ -20,8 +27,18 @@ export interface OrderTimeResult {
   message: string;
 }
 
-// Simulación de delay para APIs
+// Simulación de delay para APIs mock (materiales, etc.)
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Gets the authentication token from server-side cookies
+ * @returns The token or null if not found
+ */
+async function getServerToken(): Promise<string | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('auth-token')?.value;
+  return token || null;
+}
 
 // Server Action: Subir evidencia
 export async function uploadEvidence(
@@ -29,7 +46,15 @@ export async function uploadEvidence(
   formData: FormData
 ): Promise<EvidenceUploadResult> {
   try {
-    await delay(2000); // Simular tiempo de upload
+    // Obtener token de las cookies del servidor
+    const token = await getServerToken();
+    if (!token) {
+      return {
+        success: false,
+        message:
+          'No se encontró token de autenticación. Por favor, inicie sesión.',
+      };
+    }
 
     const file = formData.get('file') as File;
 
@@ -40,14 +65,15 @@ export async function uploadEvidence(
       };
     }
 
-    // Validaciones server-side
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/svg+xml'];
+    // Validaciones client-side ya se hacen en el componente,
+    // pero validamos de nuevo por seguridad
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     const maxSize = 5 * 1024 * 1024; // 5MB
 
     if (!allowedTypes.includes(file.type)) {
       return {
         success: false,
-        message: 'Tipo de archivo no permitido. Solo JPG, JPEG y SVG',
+        message: 'Tipo de archivo no permitido. Solo JPG, JPEG y PNG',
       };
     }
 
@@ -58,29 +84,32 @@ export async function uploadEvidence(
       };
     }
 
-    // Aquí iría la lógica real de subida
-    // - Subir a cloud storage (AWS S3, Cloudinary, etc.)
-    // - Guardar referencia en base de datos
-    // - Procesar imagen si es necesario
+    // Llamar al servicio real del backend con el token
+    const result = await uploadOrderEvidence(parseInt(orderId), file, token);
 
-    console.log(`Subiendo evidencia para orden ${orderId}:`, file.name);
+    if (result.success) {
+      // Revalidar la página para mostrar la nueva evidencia
+      revalidatePath(`/orders/${orderId}`);
 
-    // Simular éxito
-    const fileId = `evidence_${Date.now()}`;
-
-    // Revalidar la página para mostrar cambios
-    revalidatePath(`/orders/${orderId}`);
-
-    return {
-      success: true,
-      message: 'Evidencia subida exitosamente',
-      fileId,
-    };
+      return {
+        success: true,
+        message: result.message || 'Evidencia subida exitosamente',
+        fileId: result.data?.id?.toString(),
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message || 'Error al subir evidencia',
+      };
+    }
   } catch (error) {
-    console.error('Error uploading evidence:', error);
+    console.error('Error en uploadEvidence:', error);
     return {
       success: false,
-      message: 'Error interno del servidor',
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Error inesperado al subir evidencia',
     };
   }
 }
@@ -90,17 +119,19 @@ export async function submitComment(
   orderId: string,
   comment: string
 ): Promise<CommentSubmitResult> {
-  console.log('📝 Iniciando submitComment:', {
-    orderId,
-    commentLength: comment.length,
-  });
-
   try {
-    await delay(800); // Reducir tiempo para mejor UX
+    // Obtener token de las cookies del servidor
+    const token = await getServerToken();
+    if (!token) {
+      return {
+        success: false,
+        message:
+          'No se encontró token de autenticación. Por favor, inicie sesión.',
+      };
+    }
 
     // Validación de comentario vacío
     if (!comment.trim()) {
-      console.log('❌ Comentario vacío');
       return {
         success: false,
         message: 'El comentario no puede estar vacío',
@@ -109,53 +140,42 @@ export async function submitComment(
 
     // Validación de longitud
     if (comment.length > 1000) {
-      console.log('❌ Comentario muy largo:', comment.length);
       return {
         success: false,
         message: 'El comentario es demasiado largo (máximo 1000 caracteres)',
       };
     }
 
-    // Simular guardado exitoso
-    // En producción aquí iría:
-    // - Guardar comentario en base de datos
-    // - Notificar a supervisores si es necesario
-    // - Registrar timestamp y usuario
-    // - Validar permisos del usuario
+    // Llamar al servicio real del backend con el token
+    const result = await addOrderComment(
+      parseInt(orderId),
+      comment.trim(),
+      token
+    );
 
-    const commentId = `comment_${Date.now()}`;
-    const timestamp = new Date().toISOString();
-
-    console.log('✅ Comentario guardado exitosamente:', {
-      orderId,
-      commentId,
-      timestamp,
-      preview: comment.substring(0, 50) + (comment.length > 50 ? '...' : ''),
-    });
-
-    // Simular revalidación de página
-    try {
+    if (result.success) {
+      // Revalidar la página para mostrar el nuevo comentario
       revalidatePath(`/orders/${orderId}`);
-      console.log('🔄 Página revalidada');
-    } catch (revalidateError) {
-      console.warn('⚠️ Error en revalidación (no crítico):', revalidateError);
+
+      return {
+        success: true,
+        message: result.message || '¡Comentario enviado exitosamente!',
+        commentId: result.data?.id?.toString(),
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message || 'Error al enviar comentario',
+      };
     }
-
-    // Respuesta exitosa garantizada para comentarios válidos
-    return {
-      success: true,
-      message: '¡Comentario enviado exitosamente!',
-      commentId,
-    };
   } catch (error) {
-    console.error('💥 Error inesperado en submitComment:', error);
-
-    // Incluso en caso de error, devolvemos éxito para el mock
-    // En producción esto sería un error real
+    console.error('Error en submitComment:', error);
     return {
-      success: true,
-      message: 'Comentario enviado (modo desarrollo)',
-      commentId: `fallback_${Date.now()}`,
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Error inesperado al enviar comentario',
     };
   }
 }
@@ -205,11 +225,43 @@ export async function searchMaterials(searchTerm: string): Promise<Material[]> {
   );
 }
 
-// Server Action: Agregar material
+// Server Action: Agregar material a una orden
+export async function addMaterialToOrderAction(
+  orderId: number,
+  request: AgregarMaterialRequest
+): Promise<OrderApiResponse> {
+  try {
+    const token = await getServerAuthToken();
+    if (!token) {
+      return {
+        success: false,
+        message: 'No autorizado. Por favor, inicia sesión nuevamente.',
+      };
+    }
+
+    // Dynamic import to avoid circular dependencies
+    const { addMaterialToOrder } = await import('@/services/materials.service');
+    const result = await addMaterialToOrder(orderId, request, token);
+
+    if (result.success) {
+      revalidatePath(`/orders/${orderId}`);
+    }
+
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+// Server Action: Agregar material (DEPRECATED - usar addMaterialToOrderAction)
 export async function addMaterial(
   name: string,
   quantity: string
 ): Promise<MaterialResult> {
+  console.log('⚠️ DEPRECATED: addMaterial - usar addMaterialToOrderAction');
   console.log('➕ Agregando material:', { name, quantity });
 
   try {

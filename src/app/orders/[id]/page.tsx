@@ -1,8 +1,8 @@
-import EvidenceUpload from '@/components/EvidenceUpload/EvidenceUpload';
-import OrderComments from '@/components/OrderComments/OrderComments';
-import OrderTimeTracker from '@/components/OrderTimeTracker/OrderTimeTracker';
-import MaterialsSection from '@/components/MaterialsSection/MaterialsSection';
-import BackButton from '@/components/BackButton/BackButton';
+import { useOrderDetail } from '@/hooks/useOrderDetail';
+import OrderDetailHeader from '@/components/OrderDetailHeader/OrderDetailHeader';
+import OrderBasicInfo from '@/components/OrderBasicInfo/OrderBasicInfo';
+import OrderActionsSection from '@/components/OrderActionsSection/OrderActionsSection';
+import ErrorMessage from '@/components/ErrorMessage/ErrorMessage';
 import { cn } from '@/lib/utils';
 
 interface OrderDetailPageProps {
@@ -15,34 +15,56 @@ export default async function OrderDetailPage({
   params,
 }: OrderDetailPageProps) {
   // Unwrap params usando await (Server Component)
-  const { id: orderId } = await params;
+  const { id: orderIdString } = await params;
+  const orderId = parseInt(orderIdString, 10);
 
-  console.log('🖥️ Server Component - Página Orden:', orderId);
+  // Cargar datos usando el hook
+  const { order, error, isAuthenticated } = await useOrderDetail(orderId);
 
+  // Caso: No autenticado
+  if (!isAuthenticated) {
+    return (
+      <>
+        <OrderDetailHeader title='Orden de trabajo' />
+        <ErrorMessage
+          title=''
+          message='No se encontró token de autenticación. Por favor, inicie sesión nuevamente.'
+          type='warning'
+        />
+      </>
+    );
+  }
+
+  // Caso: Error en la carga
+  if (error) {
+    return (
+      <>
+        <OrderDetailHeader title='Error cargando orden' />
+        <ErrorMessage title='' message={error} type='error' />
+      </>
+    );
+  }
+
+  // Caso: Sin orden
+  if (!order) {
+    return (
+      <>
+        <OrderDetailHeader title='Orden no encontrada' />
+        <ErrorMessage
+          title=''
+          message='No se pudieron cargar los detalles de la orden'
+          type='info'
+        />
+      </>
+    );
+  }
+
+  // Caso exitoso: Mostrar detalles de la orden
   return (
     <main className={cn('space-y-6')}>
-      <header className={cn('flex items-center justify-between')}>
-        <div>
-          <BackButton />
-          <h1 className={cn('text-3xl font-bold text-primary')}>
-            Orden de trabajo
-          </h1>
-          <p className={cn('text-primary/80 mt-1')}>Orden #{orderId}</p>
-        </div>
-      </header>
-
-      <section className={cn('grid grid-cols-1 lg:grid-cols-2 gap-6')}>
-        <div className={cn('space-y-6')}>
-          <OrderTimeTracker orderId={orderId} />
-          <EvidenceUpload orderId={orderId} />
-          <OrderComments orderId={orderId} />
-        </div>
-
-        <div className={cn('space-y-6')}>
-          {/* Solo este widget usa Server Component */}
-          <MaterialsSection orderId={orderId} />
-        </div>
-      </section>
+      <OrderDetailHeader order={order} />
+      <OrderBasicInfo order={order} />
+      <OrderActionsSection order={order} />
     </main>
   );
 }

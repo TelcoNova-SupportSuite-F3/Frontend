@@ -21,173 +21,139 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Edit2, Trash2 } from 'lucide-react';
-import { useState, useTransition } from 'react';
-import {
-  addMaterial,
-  updateMaterial,
-  deleteMaterial,
-} from '@/lib/order-actions';
-import { toast } from 'sonner';
-
-interface Material {
-  id: string;
-  name: string;
-  quantity: number;
-}
+import { useAddMaterial } from '@/hooks/useAddMaterial';
+import { useEditMaterial } from '@/hooks/useEditMaterial';
+import { useDeleteMaterial } from '@/hooks/useDeleteMaterial';
+import { useSearchMaterials } from '@/hooks/useSearchMaterials';
+import MaterialSearchInput from '@/components/MaterialSearchInput/MaterialSearchInput';
+import type {
+  MaterialUtilizadoResponse,
+  MaterialResponse,
+} from '@/types/orders';
+import { useEffect } from 'react';
 
 interface MaterialsSectionProps {
-  materials: Material[];
+  materialesUtilizados: MaterialUtilizadoResponse[];
+  orderId: string;
 }
 
 export default function MaterialsSectionClient({
-  materials,
+  materialesUtilizados,
+  orderId,
 }: MaterialsSectionProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [isPending, startTransition] = useTransition();
+  // Hooks especializados para cada operación
+  const addMaterial = useAddMaterial(orderId);
+  const editMaterial = useEditMaterial();
+  const deleteMaterial = useDeleteMaterial();
+  const searchMaterials = useSearchMaterials();
 
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editQuantity, setEditQuantity] = useState('');
+  // Combinar estados de loading para deshabilitar acciones
+  const isPending =
+    addMaterial.isPending || editMaterial.isPending || deleteMaterial.isPending;
 
-  const handleAddMaterial = () => {
-    if (!searchTerm.trim() || !quantity.trim()) {
-      toast.error('Por favor completa todos los campos');
-      return;
+  // Búsqueda automática cuando el término cambia
+  useEffect(() => {
+    if (addMaterial.searchTerm.length >= 3) {
+      const timeoutId = setTimeout(() => {
+        searchMaterials.performSearch(addMaterial.searchTerm);
+      }, 300); // Debounce de 300ms
+
+      return () => clearTimeout(timeoutId);
+    } else {
+      searchMaterials.clearSearch();
+    }
+  }, [addMaterial.searchTerm]);
+
+  const handleMaterialSelect = (material: MaterialResponse) => {
+    console.log('✅ Material seleccionado:', material);
+    addMaterial.setSearchTerm(material.nombre);
+    addMaterial.setSelectedMaterial(material);
+    searchMaterials.clearSearch();
+  };
+
+  const handleSearchValueChange = (value: string) => {
+    addMaterial.setSearchTerm(value);
+
+    // Si el usuario está escribiendo, limpiar la selección actual
+    if (
+      addMaterial.selectedMaterial &&
+      value !== addMaterial.selectedMaterial.nombre
+    ) {
+      addMaterial.setSelectedMaterial(null);
     }
 
-    console.log('🚀 Agregando material:', { searchTerm, quantity });
-
-    startTransition(async () => {
-      try {
-        const result = await addMaterial(searchTerm.trim(), quantity.trim());
-
-        if (result.success) {
-          toast.success(result.message);
-          setSearchTerm('');
-          setQuantity('');
-        } else {
-          toast.error(result.message);
-        }
-      } catch (error) {
-        console.error('💥 Error agregando material:', error);
-        toast.error('Error inesperado al agregar material');
-      }
-    });
-  };
-
-  const openEditModal = (material: Material) => {
-    setEditingMaterial(material);
-    setEditName(material.name);
-    setEditQuantity(material.quantity.toString());
-    setIsEditModalOpen(true);
-  };
-
-  const closeEditModal = () => {
-    setIsEditModalOpen(false);
-    setEditingMaterial(null);
-    setEditName('');
-    setEditQuantity('');
-  };
-
-  const handleUpdateMaterial = () => {
-    if (!editingMaterial || !editName.trim() || !editQuantity.trim()) {
-      toast.error('Por favor completa todos los campos');
-      return;
+    // Realizar búsqueda si hay 3+ caracteres
+    if (value.length >= 3) {
+      searchMaterials.performSearch(value);
+    } else {
+      searchMaterials.clearSearch();
     }
-
-    const newQuantity = parseInt(editQuantity);
-    if (isNaN(newQuantity) || newQuantity < 0) {
-      toast.error('La cantidad debe ser un número válido');
-      return;
-    }
-
-    console.log('🚀 Actualizando material:', {
-      id: editingMaterial.id,
-      editName,
-      newQuantity,
-    });
-
-    startTransition(async () => {
-      try {
-        const result = await updateMaterial(
-          editingMaterial.id,
-          editName.trim(),
-          newQuantity
-        );
-
-        if (result.success) {
-          toast.success(result.message);
-          closeEditModal();
-        } else {
-          toast.error(result.message);
-        }
-      } catch (error) {
-        console.error('💥 Error actualizando material:', error);
-        toast.error('Error inesperado al actualizar material');
-      }
-    });
-  };
-
-  const handleDeleteMaterial = (id: string) => {
-    console.log('🚀 Eliminando material:', id);
-
-    startTransition(async () => {
-      try {
-        const result = await deleteMaterial(id);
-
-        if (result.success) {
-          toast.success(result.message);
-        } else {
-          toast.error(result.message);
-        }
-      } catch (error) {
-        console.error('💥 Error eliminando material:', error);
-        toast.error('Error inesperado al eliminar material');
-      }
-    });
   };
 
   return (
     <Card className='bg-blue-50'>
       <CardContent className='p-6 space-y-4'>
-        <div className='grid grid-cols-2 gap-4'>
-          <div className='space-y-2'>
-            <Label htmlFor='search' className='text-sm font-medium'>
-              Búsqueda
-            </Label>
-            <Input
-              id='search'
-              placeholder='Nombre del material'
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              disabled={isPending}
-            />
-          </div>
+        {/* Formulario de agregar material */}
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
+          {/* Campo de búsqueda con autocompletado */}
+          <MaterialSearchInput
+            value={addMaterial.searchTerm}
+            onValueChange={handleSearchValueChange}
+            onMaterialSelect={handleMaterialSelect}
+            searchResults={searchMaterials.searchResults}
+            isSearching={searchMaterials.isSearching}
+            searchError={searchMaterials.searchError}
+            disabled={isPending}
+          />
+
+          {/* Campo de cantidad */}
           <div className='space-y-2'>
             <Label htmlFor='quantity' className='text-sm font-medium'>
               Cantidad
+              {addMaterial.selectedMaterial && (
+                <span className='text-xs text-gray-500 ml-2'>
+                  (Máx: {addMaterial.selectedMaterial.stockDisponible}{' '}
+                  {addMaterial.selectedMaterial.unidadMedida})
+                </span>
+              )}
             </Label>
             <Input
               id='quantity'
               placeholder='0'
               type='number'
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              min='0'
-              disabled={isPending}
+              value={addMaterial.quantity}
+              onChange={(e) => addMaterial.setQuantity(e.target.value)}
+              min='1'
+              max={addMaterial.selectedMaterial?.stockDisponible}
+              disabled={isPending || !addMaterial.selectedMaterial}
+              className='w-full'
             />
           </div>
         </div>
+
+        {/* Información del material seleccionado */}
+        {addMaterial.selectedMaterial && (
+          <div className='bg-blue-100 border border-blue-200 rounded-lg p-3 text-sm'>
+            <p className='font-medium text-blue-900'>
+              {addMaterial.selectedMaterial.nombre}
+            </p>
+            <p className='text-blue-700 text-xs mt-1'>
+              Código: {addMaterial.selectedMaterial.codigo} | Stock disponible:{' '}
+              {addMaterial.selectedMaterial.stockDisponible}{' '}
+              {addMaterial.selectedMaterial.unidadMedida}
+            </p>
+          </div>
+        )}
+
         <Button
-          onClick={handleAddMaterial}
+          onClick={addMaterial.handleAddMaterial}
           className='w-full bg-blue-600 hover:bg-blue-700 text-white'
-          disabled={isPending || !searchTerm.trim() || !quantity.trim()}
+          disabled={!addMaterial.canAdd || isPending}
         >
-          {isPending ? 'Agregando...' : 'Agregar'}
+          {addMaterial.isPending ? 'Agregando...' : 'Agregar Material'}
         </Button>
 
+        {/* Tabla de materiales */}
         <div className='bg-white rounded-lg overflow-hidden'>
           <Table>
             <TableHeader>
@@ -204,7 +170,7 @@ export default function MaterialsSectionClient({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {materials.length === 0 ? (
+              {materialesUtilizados.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={3}
@@ -214,33 +180,35 @@ export default function MaterialsSectionClient({
                   </TableCell>
                 </TableRow>
               ) : (
-                materials.map((material) => (
-                  <TableRow key={material.id} className='hover:bg-gray-50'>
+                materialesUtilizados.map((materialUtilizado) => (
+                  <TableRow
+                    key={materialUtilizado.id}
+                    className='hover:bg-gray-50'
+                  >
                     <TableCell className='text-center'>
-                      {material.name}
+                      {materialUtilizado.nombreMaterial}
                     </TableCell>
                     <TableCell className='text-center'>
-                      {material.quantity}
+                      {materialUtilizado.cantidadUtilizada}{' '}
+                      {materialUtilizado.unidadMedida}
                     </TableCell>
                     <TableCell className='text-center'>
                       <div className='flex space-x-2 justify-center'>
                         <Button
                           variant='ghost'
                           size='sm'
-                          className='h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700'
-                          onClick={() => openEditModal(material)}
-                          disabled={isPending}
-                          title='Actualizar'
+                          className='h-8 w-8 p-0 text-gray-400 cursor-not-allowed'
+                          disabled={true}
+                          title='Edición no disponible actualmente'
                         >
                           <Edit2 className='h-4 w-4' />
                         </Button>
                         <Button
                           variant='ghost'
                           size='sm'
-                          className='h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700'
-                          onClick={() => handleDeleteMaterial(material.id)}
-                          disabled={isPending}
-                          title='Eliminar'
+                          className='h-8 w-8 p-0 text-gray-400 cursor-not-allowed'
+                          disabled={true}
+                          title='Eliminación no disponible actualmente'
                         >
                           <Trash2 className='h-4 w-4' />
                         </Button>
@@ -253,12 +221,17 @@ export default function MaterialsSectionClient({
           </Table>
         </div>
 
+        {/* Indicador de loading */}
         {isPending && (
           <div className='text-sm text-blue-600 text-center'>Procesando...</div>
         )}
       </CardContent>
 
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+      {/* Modal de edición */}
+      <Dialog
+        open={editMaterial.isEditModalOpen}
+        onOpenChange={editMaterial.closeEditModal}
+      >
         <DialogContent className='sm:max-w-[425px]'>
           <DialogHeader>
             <DialogTitle>Editar Material</DialogTitle>
@@ -275,8 +248,8 @@ export default function MaterialsSectionClient({
               <Input
                 id='edit-name'
                 type='text'
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
+                value={editMaterial.editName}
+                onChange={(e) => editMaterial.setEditName(e.target.value)}
                 className='col-span-3'
                 placeholder='Nombre del material'
                 disabled={isPending}
@@ -290,8 +263,8 @@ export default function MaterialsSectionClient({
               <Input
                 id='edit-quantity'
                 type='number'
-                value={editQuantity}
-                onChange={(e) => setEditQuantity(e.target.value)}
+                value={editMaterial.editQuantity}
+                onChange={(e) => editMaterial.setEditQuantity(e.target.value)}
                 className='col-span-3'
                 placeholder='Cantidad'
                 min='0'
@@ -303,17 +276,17 @@ export default function MaterialsSectionClient({
           <DialogFooter>
             <Button
               variant='outline'
-              onClick={closeEditModal}
+              onClick={editMaterial.closeEditModal}
               disabled={isPending}
             >
               Cancelar
             </Button>
             <Button
-              onClick={handleUpdateMaterial}
-              disabled={isPending || !editName.trim() || !editQuantity.trim()}
+              onClick={editMaterial.handleUpdateMaterial}
+              disabled={!editMaterial.canUpdate || isPending}
               className='bg-blue-600 hover:bg-blue-700'
             >
-              {isPending ? 'Actualizando...' : 'Actualizar'}
+              {editMaterial.isPending ? 'Actualizando...' : 'Actualizar'}
             </Button>
           </DialogFooter>
         </DialogContent>

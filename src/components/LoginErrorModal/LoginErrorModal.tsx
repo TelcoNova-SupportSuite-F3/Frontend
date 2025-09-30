@@ -27,36 +27,23 @@ const errorConfig = {
   invalid_domain: {
     icon: Mail,
     title: 'Acceso inválido',
-    description: 'Posibles causas:',
-    bullets: [
-      'Credenciales inválidas.',
-      'Tu rol no pertenece a técnico.',
-      'El dominio de tu correo no pertenece a nuestra organización dominio telco-nova.com',
-    ],
+    description: 'El dominio de tu correo no pertenece a nuestra organización.',
     iconColor: 'text-red-500',
     bgColor: 'bg-red-50',
   },
   invalid_role: {
     icon: UserX,
-    title: 'Rol no autorizado',
-    description: 'Tu usuario no tiene permisos de técnico.',
-    bullets: [
-      'Tu cuenta existe pero no tienes rol de técnico.',
-      'Contacta al administrador para verificar tus permisos.',
-      'Solo técnicos pueden acceder a esta aplicación.',
-    ],
+    title: 'Usuario no es técnico',
+    description:
+      'Tu rol no pertenece a técnico. Solo los técnicos pueden acceder a esta aplicación.',
     iconColor: 'text-orange-500',
     bgColor: 'bg-orange-50',
   },
   invalid_credentials: {
     icon: Lock,
-    title: 'Credenciales incorrectas',
-    description: 'Los datos ingresados no son válidos.',
-    bullets: [
-      'Verifica tu correo electrónico.',
-      'Revisa que tu contraseña sea correcta.',
-      'Asegúrate de no tener activado Caps Lock.',
-    ],
+    title: 'Credenciales inválidas',
+    description:
+      'El correo electrónico o la contraseña que ingresaste son incorrectos.',
     iconColor: 'text-blue-500',
     bgColor: 'bg-blue-50',
   },
@@ -85,28 +72,20 @@ export default function LoginErrorModal({
           <DialogTitle className='text-center text-lg font-semibold text-gray-900'>
             {config.title}
           </DialogTitle>
-          <DialogDescription className='text-center text-sm text-gray-600 mt-2'>
-            {config.description}
-          </DialogDescription>
         </DialogHeader>
 
         <div className='mt-4'>
-          <ul className='space-y-2 text-sm text-gray-700'>
-            {config.bullets.map((bullet, index) => (
-              <li key={index} className='flex items-start gap-2'>
-                <div className='flex-shrink-0 w-1.5 h-1.5 bg-gray-400 rounded-full mt-2'></div>
-                <span>{bullet}</span>
-              </li>
-            ))}
-          </ul>
+          <p className='text-sm text-gray-700 text-center px-4'>
+            {config.description}
+          </p>
 
           {errorType === 'invalid_domain' && email && (
-            <div className='mt-3 p-3 bg-gray-50 rounded-lg'>
+            <div className='mt-4 p-3 bg-gray-50 rounded-lg'>
               <p className='text-xs text-gray-600'>
                 <strong>Email ingresado:</strong> {email}
               </p>
               <p className='text-xs text-gray-600 mt-1'>
-                <strong>Dominio requerido:</strong> @telco-nova.com
+                <strong>Dominio requerido:</strong> @telconova.com
               </p>
             </div>
           )}
