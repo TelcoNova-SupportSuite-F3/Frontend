@@ -1,62 +1,109 @@
 import { Button } from '@/components/ui/button';
-import { CheckCircle, X } from 'lucide-react';
-import { useFileValidation } from '@/hooks/useFileValidation';
+import { CheckCircle, X, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  FILE_PREVIEW_TEXTS,
+  FILE_PREVIEW_STYLES,
+  formatFileSize,
+} from './file-preview.utils';
 
+/**
+ * Props for FilePreview component
+ */
 interface FilePreviewProps {
+  /** The file to preview */
   file: File;
+  /** Whether an upload is in progress */
   isLoading: boolean;
+  /** Callback when remove button is clicked */
   onRemove: () => void;
+  /** Custom success icon */
+  successIcon?: LucideIcon;
+  /** Custom remove button text */
+  removeButtonText?: string;
+  /** Optional CSS classes for container */
+  className?: string;
+  /** Show file size */
+  showFileSize?: boolean;
 }
 
+/**
+ * FilePreview Component
+ *
+ * Displays a preview of the selected file with options to remove it.
+ * Follows SOLID principles:
+ * - Single Responsibility: Only displays file preview
+ * - Open/Closed: Customizable through props
+ * - Dependency Inversion: Accepts custom icons and formatters
+ *
+ * @example
+ * ```tsx
+ * <FilePreview
+ *   file={selectedFile}
+ *   isLoading={uploading}
+ *   onRemove={handleRemove}
+ * />
+ *
+ * // With custom icon
+ * <FilePreview
+ *   file={selectedFile}
+ *   isLoading={uploading}
+ *   onRemove={handleRemove}
+ *   successIcon={FileCheck}
+ *   removeButtonText="Cancelar"
+ * />
+ * ```
+ */
 export default function FilePreview({
   file,
   isLoading,
   onRemove,
+  successIcon: SuccessIcon = CheckCircle,
+  removeButtonText = FILE_PREVIEW_TEXTS.REMOVE_BUTTON,
+  className,
+  showFileSize = true,
 }: FilePreviewProps) {
-  const { formatFileSize } = useFileValidation();
-
   return (
     <div
-      className={cn('space-y-3')}
+      className={cn(FILE_PREVIEW_STYLES.CONTAINER, className)}
       role='status'
-      aria-label='Archivo seleccionado'
+      aria-label={FILE_PREVIEW_TEXTS.ARIA_SELECTED_FILE}
     >
-      <CheckCircle
-        className={cn('mx-auto h-12 w-12 text-green-500')}
+      <SuccessIcon
+        className={cn(FILE_PREVIEW_STYLES.SUCCESS_ICON)}
         role='img'
-        aria-label='Archivo seleccionado correctamente'
+        aria-label={FILE_PREVIEW_TEXTS.ARIA_FILE_SELECTED_SUCCESS}
       />
-      <div className={cn('space-y-1')}>
+      <div className={cn(FILE_PREVIEW_STYLES.TEXT_CONTAINER)}>
         <p
-          className={cn('font-medium text-gray-900')}
+          className={cn(FILE_PREVIEW_STYLES.FILE_NAME)}
           aria-label={`Nombre del archivo: ${file.name}`}
         >
           {file.name}
         </p>
-        <p
-          className={cn('text-sm text-gray-500')}
-          aria-label={`Tamaño del archivo: ${formatFileSize(file.size)}`}
-        >
-          {formatFileSize(file.size)}
-        </p>
+        {showFileSize && (
+          <p
+            className={cn(FILE_PREVIEW_STYLES.FILE_SIZE)}
+            aria-label={`Tamaño del archivo: ${formatFileSize(file.size)}`}
+          >
+            {formatFileSize(file.size)}
+          </p>
+        )}
       </div>
       <Button
         variant='ghost'
         size='sm'
         onClick={onRemove}
-        className={cn(
-          'text-destructive hover:text-destructive hover:bg-destructive/10'
-        )}
+        className={cn(FILE_PREVIEW_STYLES.REMOVE_BUTTON)}
         disabled={isLoading}
         aria-label={`Remover archivo ${file.name}`}
       >
         <X
-          className={cn('h-4 w-4 mr-1')}
+          className={cn(FILE_PREVIEW_STYLES.REMOVE_ICON)}
           role='img'
-          aria-label='Ícono de eliminar'
+          aria-label={FILE_PREVIEW_TEXTS.ARIA_REMOVE_ICON}
         />
-        Remover
+        {removeButtonText}
       </Button>
     </div>
   );

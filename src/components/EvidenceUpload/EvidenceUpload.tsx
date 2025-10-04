@@ -1,54 +1,70 @@
 'use client';
 
-import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
-import FileUpload from '../FileUpload/FileUpload';
-import { uploadEvidence } from '../../lib/order-actions';
+import FileUpload from '@/components/FileUpload/FileUpload';
+import { useEvidenceUpload } from '@/hooks/useEvidenceUpload';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
+/**
+ * Props for EvidenceUpload component
+ */
 interface EvidenceUploadProps {
+  /** ID of the order to upload evidence for */
   orderId: string;
+  /** Optional CSS classes */
   className?: string;
+  /** Callback called after successful upload */
+  onUploadSuccess?: () => void;
+  /** Callback called when upload fails */
+  onUploadError?: (error: string) => void;
 }
 
+/**
+ * EvidenceUpload Component
+ *
+ * Handles evidence upload for work orders. This component follows SOLID principles:
+ * - Single Responsibility: Only coordinates UI and upload flow
+ * - Dependency Inversion: Depends on useEvidenceUpload abstraction
+ * - Open/Closed: Extended through callbacks without modification
+ *
+ * The actual upload logic is delegated to the useEvidenceUpload hook,
+ * making this component focused on presentation and user interaction.
+ *
+ * @example
+ * ```tsx
+ * <EvidenceUpload
+ *   orderId="123"
+ *   onUploadSuccess={() => console.log('Upload successful')}
+ * />
+ * ```
+ */
 export default function EvidenceUpload({
   orderId,
   className,
+  onUploadSuccess,
+  onUploadError,
 }: EvidenceUploadProps) {
   const router = useRouter();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const { selectedFile, isPending, selectFile, upload } =
+    useEvidenceUpload(orderId);
 
   const handleFileSelect = (file: File) => {
-    setSelectedFile(file);
+    selectFile(file);
   };
 
-  const handleUpload = () => {
-    if (!selectedFile) return;
+  const handleUpload = async () => {
+    const result = await upload();
 
-    startTransition(async () => {
-      try {
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-
-        const result = await uploadEvidence(orderId, formData);
-
-        if (result.success) {
-          toast.success(result.message);
-          setSelectedFile(null);
-
-          // Forzar refresh de la página para mostrar la evidencia agregada
-          router.refresh();
-        } else {
-          toast.error(result.message);
-        }
-      } catch (error) {
-        console.error('Error uploading evidence:', error);
-        toast.error('Error inesperado al subir evidencia');
-      }
-    });
+    if (result.success) {
+      toast.success(result.message);
+      router.refresh();
+      onUploadSuccess?.();
+    } else {
+      toast.error(result.message);
+      onUploadError?.(result.message);
+    }
   };
 
   return (

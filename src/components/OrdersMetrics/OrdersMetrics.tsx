@@ -1,63 +1,70 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import type { OrdersSummary } from './orders-metrics.types';
+import {
+  METRICS_CONFIG,
+  ARIA_LABELS,
+  STYLES,
+} from './orders-metrics.constants';
 
-interface OrdersSummary {
-  total: number;
-  enProceso: number;
-  finalizadas: number;
-  asignadas: number;
-}
-
+/**
+ * Props para el componente OrdersMetrics
+ */
 interface OrdersMetricsProps {
+  /** Resumen con las estadísticas de las órdenes */
   summary: OrdersSummary;
+  /** Clases CSS adicionales para el contenedor */
+  className?: string;
 }
 
-export default function OrdersMetrics({ summary }: OrdersMetricsProps) {
-  const metrics = [
-    {
-      title: 'Total órdenes',
-      value: summary.total,
-      id: 'total-orders',
-    },
-    {
-      title: 'En proceso',
-      value: summary.enProceso,
-      id: 'in-progress-orders',
-    },
-    {
-      title: 'Finalizadas',
-      value: summary.finalizadas,
-      id: 'completed-orders',
-    },
-    {
-      title: 'Asignadas',
-      value: summary.asignadas,
-      id: 'assigned-orders',
-    },
-  ];
-
+/**
+ * Componente para mostrar métricas resumidas de órdenes de trabajo
+ *
+ * Presenta estadísticas clave en tarjetas individuales,
+ * incluyendo total de órdenes, en proceso, finalizadas y asignadas.
+ *
+ * @example
+ * ```tsx
+ * <OrdersMetrics
+ *   summary={{
+ *     total: 150,
+ *     enProceso: 45,
+ *     finalizadas: 80,
+ *     asignadas: 25
+ *   }}
+ * />
+ * ```
+ */
+export default function OrdersMetrics({
+  summary,
+  className,
+}: OrdersMetricsProps) {
   return (
     <section
-      className={cn('grid grid-cols-1 md:grid-cols-4 gap-4')}
-      aria-label='Resumen de órdenes'
+      className={cn(STYLES.SECTION, className)}
+      aria-label={ARIA_LABELS.SECTION}
     >
-      {metrics.map((metric) => (
-        <Card key={metric.id}>
-          <CardHeader className='pb-3'>
-            <CardTitle className={cn('text-sm font-medium text-primary')}>
-              {metric.title}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div
-              className={cn('text-4xl font-bold text-gray-900')}
-              aria-label={`${metric.title}: ${metric.value}`}
-            >
-              {metric.value}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+      {METRICS_CONFIG.map((metric) => {
+        const value = metric.getValue(summary);
+
+        return (
+          <Card key={metric.id}>
+            <CardHeader className={cn(STYLES.CARD_HEADER)}>
+              <CardTitle className={cn(STYLES.CARD_TITLE)}>
+                {metric.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div
+                className={cn(STYLES.VALUE)}
+                aria-label={ARIA_LABELS.getMetricLabel(metric.title, value)}
+              >
+                {value}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
     </section>
   );
 }

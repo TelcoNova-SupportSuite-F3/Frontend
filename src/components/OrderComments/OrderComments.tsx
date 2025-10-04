@@ -8,50 +8,94 @@ import { Label } from '@/components/ui/label';
 import { submitComment } from '@/lib/order-actions';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import {
+  COMMENT_CONFIG,
+  TOAST_DURATIONS,
+  MESSAGES,
+  ARIA_LABELS,
+  STYLES,
+  formatCharCounter,
+  getSuccessDescription,
+} from './order-comments.constants';
 
+/**
+ * Props para el componente OrderComments
+ */
 interface OrderCommentsProps {
+  /** ID de la orden de trabajo */
   orderId: string;
+  /** Clases CSS adicionales para el contenedor */
   className?: string;
+  /** Callback ejecutado cuando se envía exitosamente un comentario */
+  onCommentSubmitted?: (comment: string) => void;
+  /** Límite máximo de caracteres para el comentario */
+  maxLength?: number;
 }
 
+/**
+ * Componente para agregar comentarios a una orden de trabajo
+ *
+ * Proporciona un área de texto para escribir y enviar comentarios,
+ * con validación, límite de caracteres y atajos de teclado.
+ *
+ * @example
+ * ```tsx
+ * <OrderComments
+ *   orderId="12345"
+ *   onCommentSubmitted={(comment) => console.log('Comentario enviado:', comment)}
+ *   maxLength={500}
+ * />
+ * ```
+ */
 export default function OrderComments({
   orderId,
   className,
+  onCommentSubmitted,
+  maxLength = COMMENT_CONFIG.MAX_LENGTH,
 }: OrderCommentsProps) {
   const [comment, setComment] = useState('');
   const [isPending, startTransition] = useTransition();
 
+  /**
+   * Valida y envía el comentario
+   */
   const handleSubmit = () => {
-    if (!comment.trim()) {
-      toast.error('Por favor escribe un comentario');
+    const trimmedComment = comment.trim();
+
+    if (!trimmedComment) {
+      toast.error(MESSAGES.EMPTY_ERROR);
       return;
     }
 
     startTransition(async () => {
       try {
-        const result = await submitComment(orderId, comment.trim());
+        const result = await submitComment(orderId, trimmedComment);
 
         if (result.success) {
           toast.success(result.message, {
-            description: `Comentario enviado para orden #${orderId}`,
-            duration: 3000,
+            description: getSuccessDescription(orderId),
+            duration: TOAST_DURATIONS.SUCCESS,
           });
           setComment('');
+          onCommentSubmitted?.(trimmedComment);
         } else {
           toast.error(result.message, {
-            description: 'Intenta nuevamente',
-            duration: 4000,
+            description: MESSAGES.ERROR_DESCRIPTION,
+            duration: TOAST_DURATIONS.ERROR,
           });
         }
       } catch {
-        toast.error('Error inesperado al enviar comentario', {
-          description: 'Verifica tu conexión e intenta nuevamente',
-          duration: 5000,
+        toast.error(MESSAGES.UNEXPECTED_ERROR, {
+          description: MESSAGES.UNEXPECTED_ERROR_DESCRIPTION,
+          duration: TOAST_DURATIONS.UNEXPECTED_ERROR,
         });
       }
     });
   };
 
+  /**
+   * Maneja el atajo de teclado Ctrl/Cmd + Enter para enviar
+   */
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
@@ -59,67 +103,65 @@ export default function OrderComments({
     }
   };
 
+  const commentId = `comment-${orderId}`;
+  const helpTextId = `comment-help-${orderId}`;
+  const counterId = `comment-counter-${orderId}`;
+  const submitStatusId = `submit-status-${orderId}`;
+
   return (
     <Card
       className={cn(className)}
       role='region'
-      aria-label='Comentarios de la orden'
+      aria-label={ARIA_LABELS.REGION}
     >
-      <CardContent className={cn('p-6')}>
-        <div className={cn('space-y-4')}>
-          <div className={cn('space-y-2')}>
-            <Label
-              htmlFor={`comment-${orderId}`}
-              className={cn('text-base font-medium')}
-            >
-              Agregar comentario
+      <CardContent className={cn(STYLES.CONTENT)}>
+        <div className={cn(STYLES.CONTAINER)}>
+          <div className={cn(STYLES.FIELD_CONTAINER)}>
+            <Label htmlFor={commentId} className={cn(STYLES.LABEL)}>
+              {MESSAGES.TITLE}
             </Label>
             <Textarea
-              id={`comment-${orderId}`}
-              placeholder='Escriba un comentario sobre la orden...'
+              id={commentId}
+              placeholder={MESSAGES.PLACEHOLDER}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               onKeyDown={handleKeyDown}
-              className={cn('min-h-[120px] resize-none')}
+              className={cn(STYLES.TEXTAREA)}
               disabled={isPending}
-              maxLength={1000}
-              aria-describedby={`comment-help-${orderId} comment-counter-${orderId}`}
-              aria-label='Campo de texto para escribir comentario'
+              maxLength={maxLength}
+              aria-describedby={`${helpTextId} ${counterId}`}
+              aria-label={ARIA_LABELS.TEXTAREA}
             />
-            <div id={`comment-help-${orderId}`} className='sr-only'>
-              Escribe un comentario sobre esta orden de trabajo. Máximo 1000
-              caracteres. Usa Ctrl+Enter para enviar rápidamente.
+            <div id={helpTextId} className='sr-only'>
+              {ARIA_LABELS.HELP_TEXT(maxLength)}
             </div>
           </div>
 
-          <div className={cn('flex items-center justify-between')}>
+          <div className={cn(STYLES.ACTIONS_CONTAINER)}>
             <span
-              id={`comment-counter-${orderId}`}
-              className={cn('text-xs text-gray-500')}
+              id={counterId}
+              className={cn(STYLES.COUNTER)}
               role='status'
               aria-live='polite'
-              aria-label={`${comment.length} de 1000 caracteres utilizados`}
+              aria-label={ARIA_LABELS.COUNTER(comment.length, maxLength)}
             >
-              {comment.length}/1000 caracteres
-              {comment.length > 0 && ' • Ctrl+Enter para enviar'}
+              {formatCharCounter(comment.length, maxLength, comment.length > 0)}
             </span>
             <Button
               onClick={handleSubmit}
-              className={cn('bg-primary hover:bg-primary/90 text-white')}
+              className={cn(STYLES.BUTTON)}
               disabled={!comment.trim() || isPending}
-              aria-describedby={`submit-status-${orderId}`}
+              aria-describedby={submitStatusId}
               aria-label={
-                isPending ? 'Enviando comentario' : 'Enviar comentario'
+                isPending
+                  ? ARIA_LABELS.SUBMIT_BUTTON_LOADING
+                  : ARIA_LABELS.SUBMIT_BUTTON
               }
             >
-              {isPending ? 'Enviando...' : 'Enviar comentario'}
+              {isPending ? MESSAGES.SUBMITTING : MESSAGES.SUBMIT_BUTTON}
             </Button>
-            <div
-              id={`submit-status-${orderId}`}
-              className='sr-only'
-              aria-live='polite'
-            >
-              {isPending ? 'Enviando comentario, por favor espera' : ''}
+            <div id={submitStatusId} className='sr-only' aria-live='polite'>
+              {isPending ? ARIA_LABELS.SUBMITTING_STATUS : ''}
             </div>
           </div>
         </div>

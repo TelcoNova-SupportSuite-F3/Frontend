@@ -9,67 +9,110 @@ import {
   type OrdenTrabajoResponse,
 } from '@/types/orders';
 import { cn } from '@/lib/utils';
+import {
+  LABELS,
+  DEFAULT_EMPTY_VALUE,
+  STYLES,
+} from './order-basic-info.constants';
 
+/**
+ * Props para el componente OrderBasicInfo
+ */
 interface OrderBasicInfoProps {
+  /** Datos de la orden de trabajo a mostrar */
   order: OrdenTrabajoResponse;
+  /** Clases CSS adicionales para el contenedor principal */
+  className?: string;
+  /** Valor a mostrar para campos vacíos o nulos */
+  emptyValue?: string;
 }
 
-export default function OrderBasicInfo({ order }: OrderBasicInfoProps) {
+/**
+ * Componente para renderizar un campo de información individual
+ */
+interface InfoFieldProps {
+  label: string;
+  value: React.ReactNode;
+  className?: string;
+}
+
+/**
+ * Renderiza un campo de información con su etiqueta y valor
+ */
+function InfoField({ label, value, className }: InfoFieldProps) {
   return (
-    <Card>
+    <div className={className}>
+      <p className={cn(STYLES.LABEL)}>{label}</p>
+      {typeof value === 'string' ? (
+        <p className={cn(STYLES.VALUE)}>{value}</p>
+      ) : (
+        value
+      )}
+    </div>
+  );
+}
+
+/**
+ * Componente que muestra la información básica de una orden de trabajo
+ *
+ * Presenta los datos principales de la orden en formato de tarjeta,
+ * incluyendo estado, prioridad, información del cliente y detalles de la orden.
+ *
+ * @example
+ * ```tsx
+ * <OrderBasicInfo
+ *   order={orderData}
+ *   emptyValue="No disponible"
+ * />
+ * ```
+ */
+export default function OrderBasicInfo({
+  order,
+  className,
+  emptyValue = DEFAULT_EMPTY_VALUE,
+}: OrderBasicInfoProps) {
+  return (
+    <Card className={className}>
       <CardHeader>
-        <CardTitle className={cn('text-primary')}>
-          Información de la orden
-        </CardTitle>
+        <CardTitle className={cn(STYLES.CARD_TITLE)}>{LABELS.TITLE}</CardTitle>
       </CardHeader>
-      <CardContent className={cn('space-y-4')}>
-        {/* Estado y Prioridad */}
-        <div
-          className={cn('grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4')}
-        >
-          <div>
-            <p className={cn('text-sm font-medium text-gray-500')}>Estado</p>
-            <Badge className={cn(getEstadoColor(order.estado))}>
-              {ESTADO_LABELS[order.estado]}
-            </Badge>
-          </div>
-          <div>
-            <p className={cn('text-sm font-medium text-gray-500')}>Prioridad</p>
-            <Badge className={cn(getPrioridadColor(order.prioridad))}>
-              {PRIORIDAD_LABELS[order.prioridad]}
-            </Badge>
-          </div>
-          <div>
-            <p className={cn('text-sm font-medium text-gray-500')}>Cliente</p>
-            <p className={cn('text-sm')}>{order.clienteNombre}</p>
-          </div>
-          <div>
-            <p className={cn('text-sm font-medium text-gray-500')}>Teléfono</p>
-            <p className={cn('text-sm')}>{order.clienteTelefono || '-'}</p>
-          </div>
+      <CardContent className={cn(STYLES.CONTENT_CONTAINER)}>
+        {/* Estado, Prioridad, Cliente y Teléfono */}
+        <div className={cn(STYLES.GRID_CONTAINER)}>
+          <InfoField
+            label={LABELS.ESTADO}
+            value={
+              <Badge className={cn(getEstadoColor(order.estado))}>
+                {ESTADO_LABELS[order.estado]}
+              </Badge>
+            }
+          />
+          <InfoField
+            label={LABELS.PRIORIDAD}
+            value={
+              <Badge className={cn(getPrioridadColor(order.prioridad))}>
+                {PRIORIDAD_LABELS[order.prioridad]}
+              </Badge>
+            }
+          />
+          <InfoField label={LABELS.CLIENTE} value={order.clienteNombre} />
+          <InfoField
+            label={LABELS.TELEFONO}
+            value={order.clienteTelefono || emptyValue}
+          />
         </div>
 
         {/* Descripción */}
-        <div>
-          <p className={cn('text-sm font-medium text-gray-500')}>Descripción</p>
-          <p className={cn('text-sm')}>{order.descripcion}</p>
-        </div>
+        <InfoField label={LABELS.DESCRIPCION} value={order.descripcion} />
 
         {/* Dirección */}
-        <div>
-          <p className={cn('text-sm font-medium text-gray-500')}>Dirección</p>
-          <p className={cn('text-sm')}>{order.direccion}</p>
-        </div>
+        <InfoField label={LABELS.DIRECCION} value={order.direccion} />
 
         {/* Fecha de asignación */}
-        <div>
-          <p className={cn('text-sm font-medium text-gray-500')}>
-            Fecha asignación
-          </p>
-          <p className={cn('text-sm')}>
-            {formatDateTime(order.fechaAsignacion)}
-          </p>
-        </div>
+        <InfoField
+          label={LABELS.FECHA_ASIGNACION}
+          value={formatDateTime(order.fechaAsignacion)}
+        />
       </CardContent>
     </Card>
   );

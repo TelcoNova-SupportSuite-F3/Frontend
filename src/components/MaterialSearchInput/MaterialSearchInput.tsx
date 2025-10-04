@@ -6,18 +6,60 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { Search, Loader2, AlertCircle } from 'lucide-react';
 import type { MaterialResponse } from '@/types/orders';
+import {
+  MATERIAL_SEARCH_CONFIG,
+  MATERIAL_SEARCH_TEXTS,
+  MATERIAL_SEARCH_STYLES,
+  getStockStyle,
+} from './material-search.constants';
 
+/**
+ * Props para el componente MaterialSearchInput
+ */
 interface MaterialSearchInputProps {
+  /** Valor actual del input de búsqueda */
   value: string;
+  /** Callback cuando cambia el valor del input */
   onValueChange: (value: string) => void;
+  /** Callback cuando se selecciona un material */
   onMaterialSelect: (material: MaterialResponse) => void;
+  /** Resultados de la búsqueda */
   searchResults: MaterialResponse[];
+  /** Si está buscando actualmente */
   isSearching: boolean;
+  /** Error de búsqueda */
   searchError: string | null;
+  /** Si el input está deshabilitado */
   disabled?: boolean;
+  /** Placeholder personalizado */
   placeholder?: string;
+  /** Label personalizado */
+  label?: string;
+  /** Clases CSS adicionales */
+  className?: string;
 }
 
+/**
+ * MaterialSearchInput Component
+ *
+ * Componente de búsqueda de materiales con autocompletado.
+ * Sigue los principios SOLID:
+ * - Single Responsibility: Solo maneja la UI de búsqueda
+ * - Open/Closed: Configurable a través de props
+ * - Dependency Inversion: Recibe datos y callbacks desde el exterior
+ *
+ * @example
+ * ```tsx
+ * <MaterialSearchInput
+ *   value={searchTerm}
+ *   onValueChange={setSearchTerm}
+ *   onMaterialSelect={handleSelect}
+ *   searchResults={results}
+ *   isSearching={loading}
+ *   searchError={error}
+ * />
+ * ```
+ */
 export default function MaterialSearchInput({
   value,
   onValueChange,
@@ -26,7 +68,9 @@ export default function MaterialSearchInput({
   isSearching,
   searchError,
   disabled = false,
-  placeholder = 'Buscar material (mín. 3 letras)',
+  placeholder = MATERIAL_SEARCH_TEXTS.PLACEHOLDER,
+  label = MATERIAL_SEARCH_TEXTS.LABEL,
+  className,
 }: MaterialSearchInputProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -51,9 +95,13 @@ export default function MaterialSearchInput({
 
   // Mostrar dropdown cuando hay resultados o error
   useEffect(() => {
-    if (value.length >= 3 && (searchResults.length > 0 || searchError)) {
+    const minLength = MATERIAL_SEARCH_CONFIG.MIN_SEARCH_LENGTH;
+    if (
+      value.length >= minLength &&
+      (searchResults.length > 0 || searchError)
+    ) {
       setIsDropdownOpen(true);
-    } else if (value.length < 3) {
+    } else if (value.length < minLength) {
       setIsDropdownOpen(false);
     }
   }, [searchResults, searchError, value]);
@@ -62,7 +110,7 @@ export default function MaterialSearchInput({
     onValueChange(newValue);
     setHighlightedIndex(-1);
 
-    if (newValue.length < 3) {
+    if (newValue.length < MATERIAL_SEARCH_CONFIG.MIN_SEARCH_LENGTH) {
       setIsDropdownOpen(false);
     }
   };
@@ -100,28 +148,31 @@ export default function MaterialSearchInput({
     }
   };
 
-  const showMinimumCharsHint = value.length > 0 && value.length < 3;
-  const showSearching = isSearching && value.length >= 3;
+  // Estados calculados para renderizado condicional
+  const minLength = MATERIAL_SEARCH_CONFIG.MIN_SEARCH_LENGTH;
+  const showMinimumCharsHint = value.length > 0 && value.length < minLength;
+  const showSearching = isSearching && value.length >= minLength;
   const showResults =
     !isSearching && searchResults.length > 0 && isDropdownOpen;
   const showError = !isSearching && searchError && isDropdownOpen;
   const showNoResults =
     !isSearching &&
     searchResults.length === 0 &&
-    value.length >= 3 &&
+    value.length >= minLength &&
     isDropdownOpen &&
     !searchError;
+  const remainingChars = minLength - value.length;
 
   return (
-    <div className='space-y-2 relative'>
-      <Label htmlFor='material-search' className='text-sm font-medium'>
-        Búsqueda de Material
+    <div className={cn(MATERIAL_SEARCH_STYLES.CONTAINER, className)}>
+      <Label htmlFor='material-search' className={MATERIAL_SEARCH_STYLES.LABEL}>
+        {label}
       </Label>
 
-      <div className='relative'>
+      <div className={MATERIAL_SEARCH_STYLES.INPUT_WRAPPER}>
         {/* Input */}
-        <div className='relative'>
-          <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400' />
+        <div className={MATERIAL_SEARCH_STYLES.INPUT_ICON_WRAPPER}>
+          <Search className={MATERIAL_SEARCH_STYLES.SEARCH_ICON} />
           <Input
             ref={inputRef}
             id='material-search'
@@ -130,27 +181,26 @@ export default function MaterialSearchInput({
             onChange={(e) => handleInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
             onFocus={() => {
-              if (value.length >= 3 && searchResults.length > 0) {
+              if (value.length >= minLength && searchResults.length > 0) {
                 setIsDropdownOpen(true);
               }
             }}
             placeholder={placeholder}
             disabled={disabled}
             className={cn(
-              'pl-10 pr-10',
-              showMinimumCharsHint &&
-                'border-yellow-300 focus:border-yellow-400'
+              MATERIAL_SEARCH_STYLES.INPUT,
+              showMinimumCharsHint && MATERIAL_SEARCH_STYLES.INPUT_WARNING
             )}
           />
           {showSearching && (
-            <Loader2 className='absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-500 animate-spin' />
+            <Loader2 className={MATERIAL_SEARCH_STYLES.LOADER_ICON} />
           )}
         </div>
 
         {/* Hint de mínimo de caracteres */}
         {showMinimumCharsHint && (
-          <p className='text-xs text-yellow-600 mt-1'>
-            Escribe al menos {3 - value.length} caracteres más para buscar
+          <p className={MATERIAL_SEARCH_STYLES.HINT}>
+            {MATERIAL_SEARCH_TEXTS.MIN_CHARS_HINT(remainingChars)}
           </p>
         )}
 
@@ -158,58 +208,56 @@ export default function MaterialSearchInput({
         {(showResults || showError || showNoResults) && (
           <div
             ref={dropdownRef}
-            className={cn(
-              'absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto'
-            )}
+            className={cn(MATERIAL_SEARCH_STYLES.DROPDOWN)}
           >
             {/* Resultados */}
             {showResults && (
-              <ul className='py-1'>
+              <ul className={MATERIAL_SEARCH_STYLES.DROPDOWN_LIST}>
                 {searchResults.map((material, index) => (
                   <li
                     key={material.id}
                     onClick={() => handleSelectMaterial(material)}
                     className={cn(
-                      'px-4 py-3 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0',
+                      MATERIAL_SEARCH_STYLES.ITEM_BASE,
                       highlightedIndex === index
-                        ? 'bg-blue-50'
-                        : 'hover:bg-gray-50',
-                      !material.activo && 'opacity-50 cursor-not-allowed'
+                        ? MATERIAL_SEARCH_STYLES.ITEM_HIGHLIGHTED
+                        : MATERIAL_SEARCH_STYLES.ITEM_HOVER,
+                      !material.activo && MATERIAL_SEARCH_STYLES.ITEM_INACTIVE
                     )}
                   >
-                    <div className='flex justify-between items-start'>
-                      <div className='flex-1'>
-                        <p className='font-medium text-sm text-gray-900'>
+                    <div className={MATERIAL_SEARCH_STYLES.ITEM_CONTENT}>
+                      <div className={MATERIAL_SEARCH_STYLES.ITEM_INFO}>
+                        <p className={MATERIAL_SEARCH_STYLES.ITEM_NAME}>
                           {material.nombre}
                         </p>
-                        <p className='text-xs text-gray-500 mt-0.5'>
-                          Código: {material.codigo}
+                        <p className={MATERIAL_SEARCH_STYLES.ITEM_CODE}>
+                          {MATERIAL_SEARCH_TEXTS.CODE_LABEL} {material.codigo}
                         </p>
                         {material.descripcion && (
-                          <p className='text-xs text-gray-400 mt-1 line-clamp-2'>
+                          <p
+                            className={MATERIAL_SEARCH_STYLES.ITEM_DESCRIPTION}
+                          >
                             {material.descripcion}
                           </p>
                         )}
                       </div>
-                      <div className='ml-4 text-right flex-shrink-0'>
+                      <div className={MATERIAL_SEARCH_STYLES.ITEM_STOCK}>
                         <p
                           className={cn(
-                            'text-xs font-semibold',
-                            material.stockDisponible > 0
-                              ? 'text-green-600'
-                              : 'text-red-600'
+                            getStockStyle(material.stockDisponible)
                           )}
                         >
-                          Stock: {material.stockDisponible}
+                          {MATERIAL_SEARCH_TEXTS.STOCK_LABEL}{' '}
+                          {material.stockDisponible}
                         </p>
-                        <p className='text-xs text-gray-500 mt-0.5'>
+                        <p className={MATERIAL_SEARCH_STYLES.ITEM_UNIT}>
                           {material.unidadMedida}
                         </p>
                       </div>
                     </div>
                     {!material.activo && (
-                      <p className='text-xs text-red-500 mt-1'>
-                        Material inactivo
+                      <p className={MATERIAL_SEARCH_STYLES.ITEM_INACTIVE_TEXT}>
+                        {MATERIAL_SEARCH_TEXTS.INACTIVE_MATERIAL}
                       </p>
                     )}
                   </li>
@@ -219,16 +267,20 @@ export default function MaterialSearchInput({
 
             {/* Error */}
             {showError && (
-              <div className='px-4 py-3 flex items-center gap-2 text-red-600'>
-                <AlertCircle className='h-4 w-4 flex-shrink-0' />
-                <p className='text-sm'>{searchError}</p>
+              <div className={MATERIAL_SEARCH_STYLES.ERROR_CONTAINER}>
+                <AlertCircle className={MATERIAL_SEARCH_STYLES.ERROR_ICON} />
+                <p className={MATERIAL_SEARCH_STYLES.ERROR_TEXT}>
+                  {searchError}
+                </p>
               </div>
             )}
 
             {/* Sin resultados */}
             {showNoResults && (
-              <div className='px-4 py-3 text-center text-gray-500'>
-                <p className='text-sm'>No se encontraron materiales</p>
+              <div className={MATERIAL_SEARCH_STYLES.NO_RESULTS_CONTAINER}>
+                <p className={MATERIAL_SEARCH_STYLES.NO_RESULTS_TEXT}>
+                  {MATERIAL_SEARCH_TEXTS.NO_RESULTS}
+                </p>
               </div>
             )}
           </div>

@@ -13,7 +13,7 @@ import type {
 
 /**
  * Makes HTTP requests to the backend with proper error handling
- * Returns the response data or throws only for unexpected errors
+ * Returns the response data or throws a custom error with status and data attached
  */
 async function makeRequest<T>(
   endpoint: string,
@@ -32,8 +32,7 @@ async function makeRequest<T>(
   try {
     const response = await fetch(url, { ...defaultOptions, ...options });
 
-    // For non-OK responses, parse the error but don't throw
-    // Let the caller handle business logic errors (401, 404, etc.)
+    // For non-OK responses, create error with metadata but DON'T throw yet
     if (!response.ok) {
       const errorData: ApiError = await response.json().catch(() => ({
         message: 'Error de comunicación con el servidor',
@@ -42,24 +41,46 @@ async function makeRequest<T>(
         path: endpoint,
       }));
 
-      // Create an error object but attach response data
-      const error = new Error(
+      // Create custom error with status and data attached
+      const customError = new Error(
         errorData.message || `HTTP ${response.status}`
-      ) as Error & { status: number; data: ApiError };
-      error.status = response.status;
-      error.data = errorData;
-      throw error;
+      ) as Error & { status: number; data: ApiError; isBusinessError: boolean };
+
+      customError.status = response.status;
+      customError.data = errorData;
+      customError.isBusinessError = true; // Mark as expected business error
+
+      throw customError;
     }
 
     return await response.json();
   } catch (error) {
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
-        throw new Error('Tiempo de espera agotado. Intente nuevamente.');
+        const timeoutError = new Error(
+          'Tiempo de espera agotado. Intente nuevamente.'
+        ) as Error & {
+          status: number;
+          isBusinessError: boolean;
+        };
+        timeoutError.status = 408;
+        timeoutError.isBusinessError = false;
+        throw timeoutError;
       }
+
+      // Re-throw with metadata preserved
       throw error;
     }
-    throw new Error('Error inesperado en la comunicación');
+
+    const unknownError = new Error(
+      'Error inesperado en la comunicación'
+    ) as Error & {
+      status: number;
+      isBusinessError: boolean;
+    };
+    unknownError.status = 500;
+    unknownError.isBusinessError = false;
+    throw unknownError;
   }
 }
 
@@ -144,12 +165,20 @@ export async function fetchAuthUser(
       token: response.token,
     };
   } catch (error) {
-    console.error('💥 Error en autenticación:', error);
-
     // Type assertion for error with status
-    const apiError = error as Error & { status?: number; data?: ApiError };
+    const apiError = error as Error & {
+      status?: number;
+      data?: ApiError;
+      isBusinessError?: boolean;
+    };
     const errorMessage = apiError.message || 'Error desconocido';
     const statusCode = apiError.status;
+    const isBusinessError = apiError.isBusinessError ?? false;
+
+    // Only log to console if it's NOT a business error (unexpected errors only)
+    if (!isBusinessError) {
+      console.error('💥 Error inesperado en autenticación:', error);
+    }
 
     // Map backend error messages to frontend error types
     // Backend sends HTTP 401 with specific messages

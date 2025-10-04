@@ -4,12 +4,72 @@ import { Button } from '@/components/ui/button';
 import { CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock } from 'lucide-react';
+import { Mail, Lock, type LucideIcon } from 'lucide-react';
 import { useLoginLogic } from '@/hooks/useLoginLogic';
 import LoginErrorModal from '@/components/LoginErrorModal/LoginErrorModal';
 import { cn } from '@/lib/utils';
+import { LOGIN_FORM_TEXTS, LOGIN_FORM_STYLES } from './login-form.constants';
 
-export default function LoginForm() {
+/**
+ * Props para el componente LoginForm
+ */
+interface LoginFormProps {
+  /** Texto personalizado para el label del campo de usuario */
+  usernameLabel?: string;
+  /** Texto personalizado para el label del campo de contraseña */
+  passwordLabel?: string;
+  /** Placeholder personalizado para el campo de usuario */
+  usernamePlaceholder?: string;
+  /** Placeholder personalizado para el campo de contraseña */
+  passwordPlaceholder?: string;
+  /** Texto del botón de envío */
+  submitButtonText?: string;
+  /** Texto del botón cuando está cargando */
+  submitButtonLoadingText?: string;
+  /** Icono personalizado para el campo de usuario */
+  usernameIcon?: LucideIcon;
+  /** Icono personalizado para el campo de contraseña */
+  passwordIcon?: LucideIcon;
+  /** Mensaje al redirigir */
+  redirectingText?: string;
+  /** Clases CSS adicionales para el contenedor */
+  className?: string;
+}
+
+/**
+ * LoginForm Component
+ *
+ * Formulario de inicio de sesión con validación y manejo de errores.
+ * Sigue los principios SOLID:
+ * - Single Responsibility: Solo maneja la UI del formulario
+ * - Open/Closed: Configurable a través de props
+ * - Dependency Inversion: Depende del hook useLoginLogic
+ *
+ * @example
+ * ```tsx
+ * // Uso básico
+ * <LoginForm />
+ *
+ * // Con personalización
+ * <LoginForm
+ *   usernameLabel="Email"
+ *   submitButtonText="Iniciar Sesión"
+ *   usernameIcon={User}
+ * />
+ * ```
+ */
+export default function LoginForm({
+  usernameLabel = LOGIN_FORM_TEXTS.USERNAME_LABEL,
+  passwordLabel = LOGIN_FORM_TEXTS.PASSWORD_LABEL,
+  usernamePlaceholder = LOGIN_FORM_TEXTS.USERNAME_PLACEHOLDER,
+  passwordPlaceholder = LOGIN_FORM_TEXTS.PASSWORD_PLACEHOLDER,
+  submitButtonText = LOGIN_FORM_TEXTS.SUBMIT_BUTTON,
+  submitButtonLoadingText = LOGIN_FORM_TEXTS.SUBMIT_BUTTON_LOADING,
+  usernameIcon: UsernameIcon = Mail,
+  passwordIcon: PasswordIcon = Lock,
+  redirectingText = LOGIN_FORM_TEXTS.REDIRECTING,
+  className,
+}: LoginFormProps) {
   const {
     username,
     password,
@@ -23,46 +83,44 @@ export default function LoginForm() {
     isAuthenticated,
   } = useLoginLogic();
 
-  // Loading state mientras redirige
+  // Estado de carga mientras redirige
   if (isAuthenticated) {
     return (
-      <CardContent className={cn('text-center py-8')}>
-        <div className={cn('text-primary')}>Redirigiendo...</div>
+      <CardContent
+        className={cn(LOGIN_FORM_STYLES.CARD_CONTENT_LOADING, className)}
+      >
+        <div className={cn(LOGIN_FORM_STYLES.REDIRECTING_TEXT)}>
+          {redirectingText}
+        </div>
       </CardContent>
     );
   }
 
   return (
     <>
-      <CardContent className={cn('space-y-6 px-8 pb-8')}>
+      <CardContent className={cn(LOGIN_FORM_STYLES.CARD_CONTENT, className)}>
         <form
           onSubmit={handleSubmit}
-          className={cn('space-y-6')}
+          className={cn(LOGIN_FORM_STYLES.FORM)}
           role='form'
-          aria-label='Formulario de inicio de sesión'
+          aria-label={LOGIN_FORM_TEXTS.ARIA_FORM_LABEL}
         >
-          <div className={cn('space-y-2')}>
-            <Label
-              htmlFor='username'
-              className={cn('text-lg font-semibold text-gray-800')}
-            >
-              Usuario
+          {/* Campo de Usuario */}
+          <div className={cn(LOGIN_FORM_STYLES.FIELD_CONTAINER)}>
+            <Label htmlFor='username' className={cn(LOGIN_FORM_STYLES.LABEL)}>
+              {usernameLabel}
             </Label>
-            <div className={cn('relative')}>
-              <Mail
-                className={cn(
-                  'absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5'
-                )}
+            <div className={cn(LOGIN_FORM_STYLES.INPUT_WRAPPER)}>
+              <UsernameIcon
+                className={cn(LOGIN_FORM_STYLES.INPUT_ICON)}
                 role='img'
-                aria-label='Ícono de usuario'
+                aria-label={LOGIN_FORM_TEXTS.ARIA_USERNAME_ICON}
               />
               <Input
                 id='username'
                 type='text'
-                placeholder='Ingresa tu usuario'
-                className={cn(
-                  'pl-12 h-12 border-gray-300 rounded-lg text-base'
-                )}
+                placeholder={usernamePlaceholder}
+                className={cn(LOGIN_FORM_STYLES.INPUT)}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={isLoading}
@@ -71,33 +129,27 @@ export default function LoginForm() {
                 aria-invalid={!username && showErrorModal ? 'true' : 'false'}
               />
             </div>
-            <div id='username-help' className='sr-only'>
-              Ingresa tu nombre de usuario
+            <div id='username-help' className={LOGIN_FORM_STYLES.SR_ONLY}>
+              {LOGIN_FORM_TEXTS.ARIA_USERNAME_HELP}
             </div>
           </div>
 
-          <div className={cn('space-y-2')}>
-            <Label
-              htmlFor='password'
-              className={cn('text-lg font-semibold text-gray-800')}
-            >
-              Contraseña
+          {/* Campo de Contraseña */}
+          <div className={cn(LOGIN_FORM_STYLES.FIELD_CONTAINER)}>
+            <Label htmlFor='password' className={cn(LOGIN_FORM_STYLES.LABEL)}>
+              {passwordLabel}
             </Label>
-            <div className={cn('relative')}>
-              <Lock
-                className={cn(
-                  'absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5'
-                )}
+            <div className={cn(LOGIN_FORM_STYLES.INPUT_WRAPPER)}>
+              <PasswordIcon
+                className={cn(LOGIN_FORM_STYLES.INPUT_ICON)}
                 role='img'
-                aria-label='Ícono de contraseña'
+                aria-label={LOGIN_FORM_TEXTS.ARIA_PASSWORD_ICON}
               />
               <Input
                 id='password'
                 type='password'
-                placeholder='Ingresa tu contraseña'
-                className={cn(
-                  'pl-12 h-12 border-gray-300 rounded-lg text-base'
-                )}
+                placeholder={passwordPlaceholder}
+                className={cn(LOGIN_FORM_STYLES.INPUT)}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
@@ -106,24 +158,27 @@ export default function LoginForm() {
                 aria-invalid={!password && showErrorModal ? 'true' : 'false'}
               />
             </div>
-            <div id='password-help' className='sr-only'>
-              Ingresa tu contraseña de acceso al sistema
+            <div id='password-help' className={LOGIN_FORM_STYLES.SR_ONLY}>
+              {LOGIN_FORM_TEXTS.ARIA_PASSWORD_HELP}
             </div>
           </div>
 
-          <div className={cn('pt-4')}>
+          {/* Botón de Envío */}
+          <div className={cn(LOGIN_FORM_STYLES.BUTTON_CONTAINER)}>
             <Button
               type='submit'
               disabled={isLoading}
-              className={cn(
-                'w-full h-12 bg-primary hover:bg-primary/90 text-white font-semibold text-base rounded-lg disabled:opacity-50'
-              )}
+              className={cn(LOGIN_FORM_STYLES.BUTTON)}
               aria-describedby='login-status'
             >
-              {isLoading ? 'Verificando...' : 'Entrar'}
+              {isLoading ? submitButtonLoadingText : submitButtonText}
             </Button>
-            <div id='login-status' className='sr-only' aria-live='polite'>
-              {isLoading ? 'Verificando credenciales, por favor espera' : ''}
+            <div
+              id='login-status'
+              className={LOGIN_FORM_STYLES.SR_ONLY}
+              aria-live='polite'
+            >
+              {isLoading ? LOGIN_FORM_TEXTS.ARIA_LOGIN_STATUS_LOADING : ''}
             </div>
           </div>
         </form>

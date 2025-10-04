@@ -8,97 +8,116 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Mail, UserX, Lock } from 'lucide-react';
+import {
+  LOGIN_ERROR_TYPES,
+  LOGIN_ERROR_MODAL_STYLES,
+  LOGIN_ERROR_MODAL_TEXTS,
+  type LoginErrorType,
+  getLoginErrorConfig,
+} from './login-error.config';
 
-export type LoginErrorType =
-  | 'invalid_domain'
-  | 'invalid_role'
-  | 'invalid_credentials';
-
+/**
+ * Props for LoginErrorModal component
+ */
 interface LoginErrorModalProps {
+  /** Whether the modal is open */
   isOpen: boolean;
+  /** Callback when modal is closed */
   onClose: () => void;
+  /** Type of login error to display */
   errorType: LoginErrorType | null;
+  /** User's email (optional, shown for domain errors) */
   email?: string;
+  /** Custom required domain text */
+  requiredDomain?: string;
+  /** Custom accept button text */
+  acceptButtonText?: string;
 }
 
-const errorConfig = {
-  invalid_domain: {
-    icon: Mail,
-    title: 'Acceso inválido',
-    description: 'El dominio de tu correo no pertenece a nuestra organización.',
-    iconColor: 'text-red-500',
-    bgColor: 'bg-red-50',
-  },
-  invalid_role: {
-    icon: UserX,
-    title: 'Usuario no es técnico',
-    description:
-      'Tu rol no pertenece a técnico. Solo los técnicos pueden acceder a esta aplicación.',
-    iconColor: 'text-orange-500',
-    bgColor: 'bg-orange-50',
-  },
-  invalid_credentials: {
-    icon: Lock,
-    title: 'Credenciales inválidas',
-    description:
-      'El correo electrónico o la contraseña que ingresaste son incorrectos.',
-    iconColor: 'text-blue-500',
-    bgColor: 'bg-blue-50',
-  },
-};
-
+/**
+ * LoginErrorModal Component
+ *
+ * Displays different types of login errors in a modal dialog.
+ * Follows SOLID principles:
+ * - Single Responsibility: Only displays login error modals
+ * - Open/Closed: Error configurations are separate and extensible
+ * - Dependency Inversion: Depends on error config abstraction
+ *
+ * @example
+ * ```tsx
+ * <LoginErrorModal
+ *   isOpen={showError}
+ *   onClose={handleClose}
+ *   errorType="invalid_credentials"
+ * />
+ *
+ * // With email for domain error
+ * <LoginErrorModal
+ *   isOpen={showError}
+ *   onClose={handleClose}
+ *   errorType="invalid_domain"
+ *   email="user@example.com"
+ * />
+ * ```
+ */
 export default function LoginErrorModal({
   isOpen,
   onClose,
   errorType,
   email,
+  requiredDomain = LOGIN_ERROR_MODAL_TEXTS.REQUIRED_DOMAIN_VALUE,
+  acceptButtonText = LOGIN_ERROR_MODAL_TEXTS.BUTTON_ACCEPT,
 }: LoginErrorModalProps) {
   if (!errorType) return null;
 
-  const config = errorConfig[errorType];
+  const config = getLoginErrorConfig(errorType);
   const IconComponent = config.icon;
+  const showDomainInfo =
+    errorType === LOGIN_ERROR_TYPES.INVALID_DOMAIN && email;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
           <div
-            className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${config.bgColor} mb-4`}
+            className={`${LOGIN_ERROR_MODAL_STYLES.ICON_CONTAINER_BASE} ${config.bgColor}`}
           >
-            <IconComponent className={`h-6 w-6 ${config.iconColor}`} />
+            <IconComponent
+              className={`${LOGIN_ERROR_MODAL_STYLES.ICON} ${config.iconColor}`}
+            />
           </div>
-          <DialogTitle className='text-center text-lg font-semibold text-gray-900'>
+          <DialogTitle className={LOGIN_ERROR_MODAL_STYLES.TITLE}>
             {config.title}
           </DialogTitle>
         </DialogHeader>
 
-        <div className='mt-4'>
-          <p className='text-sm text-gray-700 text-center px-4'>
+        <div className={LOGIN_ERROR_MODAL_STYLES.CONTENT}>
+          <p className={LOGIN_ERROR_MODAL_STYLES.DESCRIPTION}>
             {config.description}
           </p>
 
-          {errorType === 'invalid_domain' && email && (
-            <div className='mt-4 p-3 bg-gray-50 rounded-lg'>
-              <p className='text-xs text-gray-600'>
-                <strong>Email ingresado:</strong> {email}
+          {showDomainInfo && (
+            <div className={LOGIN_ERROR_MODAL_STYLES.INFO_BOX}>
+              <p className={LOGIN_ERROR_MODAL_STYLES.INFO_TEXT}>
+                <strong>{LOGIN_ERROR_MODAL_TEXTS.EMAIL_ENTERED}</strong> {email}
               </p>
-              <p className='text-xs text-gray-600 mt-1'>
-                <strong>Dominio requerido:</strong> @telconova.com
+              <p className={LOGIN_ERROR_MODAL_STYLES.INFO_TEXT_MARGIN}>
+                <strong>{LOGIN_ERROR_MODAL_TEXTS.REQUIRED_DOMAIN}</strong>{' '}
+                {requiredDomain}
               </p>
             </div>
           )}
         </div>
 
-        <DialogFooter className='mt-6'>
-          <Button
-            onClick={onClose}
-            className='w-full bg-blue-600 hover:bg-blue-700 text-white'
-          >
-            Aceptar
+        <DialogFooter className={LOGIN_ERROR_MODAL_STYLES.FOOTER}>
+          <Button onClick={onClose} className={LOGIN_ERROR_MODAL_STYLES.BUTTON}>
+            {acceptButtonText}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
+// Re-export types and constants for convenience
+export { LOGIN_ERROR_TYPES, type LoginErrorType };

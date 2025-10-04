@@ -26,12 +26,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang='es'>
+    <html lang='es' suppressHydrationWarning>
       <head>
         <script src='/console-silencer.js' async></script>
       </head>
       <body
         className={cn(geistSans.variable, geistMono.variable, 'antialiased')}
+        suppressHydrationWarning
       >
         <AuthWrapper>{children}</AuthWrapper>
         <Toaster position='bottom-right' richColors />

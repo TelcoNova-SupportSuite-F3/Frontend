@@ -31,6 +31,8 @@ const USER_KEY = 'auth-user';
  * Gets token from cookies
  */
 function getTokenFromCookies(): string | null {
+  if (typeof window === 'undefined') return null;
+
   const cookies = document.cookie.split(';');
   const authCookie = cookies.find((cookie) =>
     cookie.trim().startsWith(`${TOKEN_KEY}=`)
@@ -42,6 +44,8 @@ function getTokenFromCookies(): string | null {
  * Gets user data from cookies
  */
 function getUserFromCookies(): User | null {
+  if (typeof window === 'undefined') return null;
+
   const cookies = document.cookie.split(';');
   const userCookie = cookies.find((cookie) =>
     cookie.trim().startsWith(`${USER_KEY}=`)
@@ -64,6 +68,8 @@ function getUserFromCookies(): User | null {
  * Sets a cookie with the given name and value
  */
 function setCookie(name: string, value: string, days: number = 1) {
+  if (typeof window === 'undefined') return;
+
   const expires = new Date();
   expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
   document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
@@ -73,6 +79,8 @@ function setCookie(name: string, value: string, days: number = 1) {
  * Clears all auth cookies and localStorage
  */
 function clearAuthData() {
+  if (typeof window === 'undefined') return;
+
   // Clear cookies
   document.cookie = `${TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax`;
   document.cookie = `${USER_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax`;
@@ -84,9 +92,17 @@ function clearAuthData() {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Verificar autenticación al cargar
+  // Marcar el componente como montado para evitar errores de hidratación
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Verificar autenticación al cargar (solo después de la hidratación)
+  useEffect(() => {
+    if (!isMounted) return;
+
     const checkAuth = async () => {
       try {
         // Get token from cookies (primary) or localStorage (fallback)
@@ -130,7 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     checkAuth();
-  }, []);
+  }, [isMounted]);
 
   const login = async (
     email: string,
@@ -159,11 +175,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return result;
     } catch (error) {
-      console.error('💥 Error en login:', error);
+      // This should only catch truly unexpected errors (not business logic errors)
+      // fetchAuthUser already handles all business errors (401, 403, etc.)
+
+      // Type assertion to check if it's a business error
+      const apiError = error as Error & { isBusinessError?: boolean };
+
+      // Only log unexpected errors
+      if (!apiError.isBusinessError) {
+        console.error('💥 Error inesperado en login (no de negocio):', error);
+      }
+
       return {
         success: false,
         errorType: 'server_error',
-        message: 'Error interno del servidor',
+        message: 'Error inesperado. Por favor, intenta nuevamente.',
       };
     }
   };

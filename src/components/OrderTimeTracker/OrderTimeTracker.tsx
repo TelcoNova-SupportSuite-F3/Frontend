@@ -7,19 +7,70 @@ import { updateOrderTimes } from '@/lib/order-actions';
 import { AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import {
+  ERROR_MESSAGES,
+  LABELS,
+  ARIA_LABELS,
+  STYLES,
+  validateEndAfterStart,
+  dateToISOString,
+} from './order-time-tracker.constants';
 
+/**
+ * Props para el componente OrderTimeTracker
+ */
 interface OrderTimeTrackerProps {
+  /** ID de la orden de trabajo */
   orderId: string;
+  /** Fecha y hora inicial de inicio del trabajo */
   initialStartTime?: Date;
+  /** Fecha y hora inicial de fin del trabajo */
   initialEndTime?: Date;
+  /** Clases CSS adicionales para el contenedor */
   className?: string;
+  /** Callback ejecutado cuando se actualizan las fechas exitosamente */
+  onTimesUpdated?: (start: Date | undefined, end: Date | undefined) => void;
+  /** Deshabilitar edición de fecha de inicio */
+  disableStartEdit?: boolean;
+  /** Deshabilitar edición de fecha de fin */
+  disableEndEdit?: boolean;
 }
 
+/**
+ * Componente para rastrear y actualizar tiempos de trabajo de una orden
+ *
+ * Permite visualizar y editar las fechas de inicio y fin del trabajo.
+ * La fecha de inicio es de solo lectura por defecto, mientras que la fecha
+ * de fin es editable. Incluye validación para asegurar que la fecha de fin
+ * sea posterior a la de inicio, y guarda automáticamente los cambios.
+ *
+ * @example
+ * ```tsx
+ * <OrderTimeTracker
+ *   orderId="12345"
+ *   initialStartTime={new Date('2024-01-15T08:00:00')}
+ *   initialEndTime={new Date('2024-01-15T17:00:00')}
+ *   onTimesUpdated={(start, end) => console.log('Fechas actualizadas')}
+ * />
+ * ```
+ *
+ * @example
+ * // Sin fechas iniciales
+ * ```tsx
+ * <OrderTimeTracker
+ *   orderId="12345"
+ *   disableStartEdit={false}
+ * />
+ * ```
+ */
 export default function OrderTimeTracker({
   orderId,
   initialStartTime,
   initialEndTime,
   className,
+  onTimesUpdated,
+  disableStartEdit = true,
+  disableEndEdit = false,
 }: OrderTimeTrackerProps) {
   const [startDateTime, setStartDateTime] = useState<Date | undefined>(
     initialStartTime
@@ -30,139 +81,139 @@ export default function OrderTimeTracker({
   const [dateError, setDateError] = useState<string>('');
   const [isPending, startTransition] = useTransition();
 
+  /**
+   * Valida que las fechas sean coherentes
+   */
   const validateDates = (start: Date | undefined, end: Date | undefined) => {
-    if (start && end && end <= start) {
-      setDateError('La fecha de fin debe ser posterior a la fecha de inicio');
-      return false;
-    }
-    setDateError('');
-    return true;
+    const validation = validateEndAfterStart(start, end);
+    setDateError(validation.error);
+    return validation.isValid;
   };
 
+  /**
+   * Maneja el cambio de fecha de inicio
+   */
   const handleStartDateChange = (date: Date | undefined) => {
     setStartDateTime(date);
     validateDates(date, endDateTime);
 
-    // Auto-save cuando se cambia la fecha de inicio
+    // Auto-guardar cuando se cambia la fecha de inicio
     if (date) {
       saveTimeChanges(date, endDateTime);
     }
   };
 
+  /**
+   * Maneja el cambio de fecha de fin
+   */
   const handleEndDateChange = (date: Date | undefined) => {
-    if (startDateTime && date && date <= startDateTime) {
-      setDateError('La fecha de fin debe ser posterior a la fecha de inicio');
+    if (!validateDates(startDateTime, date)) {
       return;
     }
 
     setEndDateTime(date);
-    setDateError('');
 
-    // Auto-save cuando se cambia la fecha de fin
+    // Auto-guardar cuando se cambia la fecha de fin
     if (date && startDateTime) {
       saveTimeChanges(startDateTime, date);
     }
   };
 
+  /**
+   * Guarda los cambios de tiempo en el backend
+   */
   const saveTimeChanges = (start: Date | undefined, end: Date | undefined) => {
     startTransition(async () => {
       try {
         const result = await updateOrderTimes(
           orderId,
-          start?.toISOString() || null,
-          end?.toISOString() || null
+          dateToISOString(start),
+          dateToISOString(end)
         );
 
         if (result.success) {
           toast.success(result.message);
+          onTimesUpdated?.(start, end);
         } else {
           toast.error(result.message);
         }
       } catch (error) {
         console.error('Error updating times:', error);
-        toast.error('Error inesperado al actualizar tiempos');
+        toast.error(ERROR_MESSAGES.UNEXPECTED_ERROR);
       }
     });
   };
 
   return (
     <Card className={cn(className)}>
-      <CardContent className={cn('p-6')}>
-        <div className={cn('space-y-4')}>
+      <CardContent className={cn(STYLES.CONTENT)}>
+        <div className={cn(STYLES.CONTAINER)}>
+          {/* Mensaje de error de validación */}
           {dateError && (
             <div
-              className={cn(
-                'flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-lg text-sm'
-              )}
+              className={cn(STYLES.ERROR_ALERT)}
+              role='alert'
+              aria-label={ARIA_LABELS.ERROR_ALERT}
             >
-              <AlertCircle className={cn('h-4 w-4')} />
+              <AlertCircle
+                className={cn(STYLES.ERROR_ICON)}
+                aria-hidden='true'
+              />
               {dateError}
             </div>
           )}
 
-          <div className={cn('grid grid-cols-1 md:grid-cols-2 gap-6')}>
-            {/* Mini-contenedor de Inicio - Solo lectura */}
-            <div className={cn('border rounded-lg p-4 bg-gray-50/50')}>
-              <h3 className={cn('font-semibold text-sm text-gray-700 mb-3')}>
-                Fecha de inicio
+          <div className={cn(STYLES.GRID)}>
+            {/* Contenedor de fecha de inicio */}
+            <div
+              className={cn(STYLES.SECTION_BASE)}
+              aria-label={ARIA_LABELS.START_CONTAINER}
+            >
+              <h3 className={cn(STYLES.SECTION_TITLE)}>
+                {LABELS.START_SECTION_TITLE}
               </h3>
               <DateTimePicker
-                label='Fecha'
+                label={LABELS.DATE_LABEL}
                 value={startDateTime}
                 onChange={handleStartDateChange}
-                placeholder='No marcada'
-                disabled={true}
+                placeholder={LABELS.START_PLACEHOLDER}
+                disabled={disableStartEdit}
                 compact={true}
               />
             </div>
 
-            {/* Mini-contenedor de Fin - Editable */}
+            {/* Contenedor de fecha de fin */}
             <div
-              className={cn('border rounded-lg p-4 bg-gray-50/50', {
-                'opacity-50': !startDateTime,
+              className={cn(STYLES.SECTION_BASE, {
+                [STYLES.SECTION_DISABLED]: !startDateTime,
               })}
+              aria-label={ARIA_LABELS.END_CONTAINER}
             >
-              <h3 className={cn('font-semibold text-sm text-gray-700 mb-3')}>
-                Fecha de fin
+              <h3 className={cn(STYLES.SECTION_TITLE)}>
+                {LABELS.END_SECTION_TITLE}
               </h3>
 
-              {/* Fecha actual de fin */}
-              {endDateTime && (
-                <div
-                  className={cn(
-                    'mb-4 p-3 bg-green-50 border border-green-200 rounded-lg'
-                  )}
-                >
-                  <p className={cn('text-xs font-medium text-green-700 mb-1')}>
-                    Fecha de fin actual
-                  </p>
-                  <p className={cn('text-sm text-green-900 font-semibold')}>
-                    {endDateTime.toLocaleString('es-ES', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
-                </div>
-              )}
-
               <DateTimePicker
-                label='Fecha'
+                label={LABELS.DATE_LABEL}
                 value={endDateTime}
                 onChange={handleEndDateChange}
-                placeholder='Seleccionar fecha'
+                placeholder={LABELS.END_PLACEHOLDER}
                 minDate={startDateTime}
-                disabled={!startDateTime || isPending}
+                disabled={!startDateTime || isPending || disableEndEdit}
                 compact={true}
               />
             </div>
           </div>
 
+          {/* Indicador de guardado */}
           {isPending && (
-            <div className={cn('text-sm text-primary text-center')}>
-              Guardando cambios...
+            <div
+              className={cn(STYLES.SAVING_TEXT)}
+              role='status'
+              aria-live='polite'
+              aria-label={ARIA_LABELS.SAVING_STATUS}
+            >
+              {LABELS.SAVING}
             </div>
           )}
         </div>

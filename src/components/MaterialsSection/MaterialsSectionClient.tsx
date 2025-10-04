@@ -31,12 +31,40 @@ import type {
   MaterialResponse,
 } from '@/types/orders';
 import { useEffect } from 'react';
+import { cn } from '@/lib/utils';
+import {
+  MATERIALS_SECTION_TEXTS,
+  MATERIALS_SECTION_STYLES,
+  MATERIALS_SECTION_CONFIG,
+} from './materials-section.constants';
 
+/**
+ * Props para MaterialsSectionClient
+ */
 interface MaterialsSectionProps {
+  /** Lista de materiales utilizados en la orden */
   materialesUtilizados: MaterialUtilizadoResponse[];
+  /** ID de la orden de trabajo */
   orderId: string;
 }
 
+/**
+ * MaterialsSectionClient Component
+ *
+ * Componente cliente para gestionar materiales de una orden de trabajo.
+ * Sigue los principios SOLID:
+ * - Single Responsibility: Coordina la gestión de materiales
+ * - Dependency Inversion: Usa hooks especializados para cada operación
+ * - Open/Closed: Configurable a través de constantes
+ *
+ * @example
+ * ```tsx
+ * <MaterialsSectionClient
+ *   materialesUtilizados={materials}
+ *   orderId="123"
+ * />
+ * ```
+ */
 export default function MaterialsSectionClient({
   materialesUtilizados,
   orderId,
@@ -56,13 +84,17 @@ export default function MaterialsSectionClient({
     if (addMaterial.searchTerm.length >= 3) {
       const timeoutId = setTimeout(() => {
         searchMaterials.performSearch(addMaterial.searchTerm);
-      }, 300); // Debounce de 300ms
+      }, MATERIALS_SECTION_CONFIG.DEBOUNCE_DELAY);
 
       return () => clearTimeout(timeoutId);
     } else {
       searchMaterials.clearSearch();
     }
-  }, [addMaterial.searchTerm, searchMaterials]);
+  }, [
+    addMaterial.searchTerm,
+    searchMaterials.performSearch,
+    searchMaterials.clearSearch,
+  ]);
 
   const handleMaterialSelect = (material: MaterialResponse) => {
     console.log('✅ Material seleccionado:', material);
@@ -91,10 +123,10 @@ export default function MaterialsSectionClient({
   };
 
   return (
-    <Card className='bg-blue-50'>
-      <CardContent className='p-6 space-y-4'>
+    <Card className={cn(MATERIALS_SECTION_STYLES.CARD)}>
+      <CardContent className={cn(MATERIALS_SECTION_STYLES.CARD_CONTENT)}>
         {/* Formulario de agregar material */}
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
+        <div className={cn(MATERIALS_SECTION_STYLES.FORM_GRID)}>
           {/* Campo de búsqueda con autocompletado */}
           <MaterialSearchInput
             value={addMaterial.searchTerm}
@@ -107,38 +139,45 @@ export default function MaterialsSectionClient({
           />
 
           {/* Campo de cantidad */}
-          <div className='space-y-2'>
-            <Label htmlFor='quantity' className='text-sm font-medium'>
-              Cantidad
+          <div className={cn(MATERIALS_SECTION_STYLES.FIELD_CONTAINER)}>
+            <Label
+              htmlFor='quantity'
+              className={cn(MATERIALS_SECTION_STYLES.LABEL)}
+            >
+              {MATERIALS_SECTION_TEXTS.QUANTITY_LABEL}
               {addMaterial.selectedMaterial && (
-                <span className='text-xs text-gray-500 ml-2'>
-                  (Máx: {addMaterial.selectedMaterial.stockDisponible}{' '}
-                  {addMaterial.selectedMaterial.unidadMedida})
+                <span className={cn(MATERIALS_SECTION_STYLES.LABEL_HINT)}>
+                  {MATERIALS_SECTION_TEXTS.QUANTITY_MAX_HINT(
+                    addMaterial.selectedMaterial.stockDisponible,
+                    addMaterial.selectedMaterial.unidadMedida
+                  )}
                 </span>
               )}
             </Label>
             <Input
               id='quantity'
-              placeholder='0'
+              placeholder={MATERIALS_SECTION_TEXTS.QUANTITY_PLACEHOLDER}
               type='number'
               value={addMaterial.quantity}
               onChange={(e) => addMaterial.setQuantity(e.target.value)}
-              min='1'
+              min={MATERIALS_SECTION_CONFIG.MIN_QUANTITY}
               max={addMaterial.selectedMaterial?.stockDisponible}
               disabled={isPending || !addMaterial.selectedMaterial}
-              className='w-full'
+              className={cn(MATERIALS_SECTION_STYLES.INPUT)}
             />
           </div>
         </div>
 
         {/* Información del material seleccionado */}
         {addMaterial.selectedMaterial && (
-          <div className='bg-blue-100 border border-blue-200 rounded-lg p-3 text-sm'>
-            <p className='font-medium text-blue-900'>
+          <div className={cn(MATERIALS_SECTION_STYLES.SELECTED_INFO)}>
+            <p className={cn(MATERIALS_SECTION_STYLES.SELECTED_NAME)}>
               {addMaterial.selectedMaterial.nombre}
             </p>
-            <p className='text-blue-700 text-xs mt-1'>
-              Código: {addMaterial.selectedMaterial.codigo} | Stock disponible:{' '}
+            <p className={cn(MATERIALS_SECTION_STYLES.SELECTED_DETAILS)}>
+              {MATERIALS_SECTION_TEXTS.SELECTED_MATERIAL_CODE}{' '}
+              {addMaterial.selectedMaterial.codigo} |{' '}
+              {MATERIALS_SECTION_TEXTS.SELECTED_MATERIAL_STOCK}{' '}
               {addMaterial.selectedMaterial.stockDisponible}{' '}
               {addMaterial.selectedMaterial.unidadMedida}
             </p>
@@ -147,25 +186,33 @@ export default function MaterialsSectionClient({
 
         <Button
           onClick={addMaterial.handleAddMaterial}
-          className='w-full bg-blue-600 hover:bg-blue-700 text-white'
+          className={cn(MATERIALS_SECTION_STYLES.ADD_BUTTON)}
           disabled={!addMaterial.canAdd || isPending}
         >
-          {addMaterial.isPending ? 'Agregando...' : 'Agregar Material'}
+          {addMaterial.isPending
+            ? MATERIALS_SECTION_TEXTS.ADD_BUTTON_LOADING
+            : MATERIALS_SECTION_TEXTS.ADD_BUTTON}
         </Button>
 
         {/* Tabla de materiales */}
-        <div className='bg-white rounded-lg overflow-hidden'>
+        <div className={cn(MATERIALS_SECTION_STYLES.TABLE_CONTAINER)}>
           <Table>
             <TableHeader>
-              <TableRow className='bg-blue-600'>
-                <TableHead className='font-semibold text-white text-center'>
-                  Material
+              <TableRow className={cn(MATERIALS_SECTION_STYLES.TABLE_HEADER)}>
+                <TableHead
+                  className={cn(MATERIALS_SECTION_STYLES.TABLE_HEADER_CELL)}
+                >
+                  {MATERIALS_SECTION_TEXTS.TABLE_HEADER_MATERIAL}
                 </TableHead>
-                <TableHead className='font-semibold text-white text-center'>
-                  Cantidad
+                <TableHead
+                  className={cn(MATERIALS_SECTION_STYLES.TABLE_HEADER_CELL)}
+                >
+                  {MATERIALS_SECTION_TEXTS.TABLE_HEADER_QUANTITY}
                 </TableHead>
-                <TableHead className='font-semibold text-white text-center'>
-                  Acciones
+                <TableHead
+                  className={cn(MATERIALS_SECTION_STYLES.TABLE_HEADER_CELL)}
+                >
+                  {MATERIALS_SECTION_TEXTS.TABLE_HEADER_ACTIONS}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -174,43 +221,61 @@ export default function MaterialsSectionClient({
                 <TableRow>
                   <TableCell
                     colSpan={3}
-                    className='text-center py-8 text-gray-500'
+                    className={cn(MATERIALS_SECTION_STYLES.TABLE_CELL_EMPTY)}
                   >
-                    No hay materiales agregados
+                    {MATERIALS_SECTION_TEXTS.TABLE_EMPTY}
                   </TableCell>
                 </TableRow>
               ) : (
                 materialesUtilizados.map((materialUtilizado) => (
                   <TableRow
                     key={materialUtilizado.id}
-                    className='hover:bg-gray-50'
+                    className={cn(MATERIALS_SECTION_STYLES.TABLE_ROW)}
                   >
-                    <TableCell className='text-center'>
+                    <TableCell
+                      className={cn(MATERIALS_SECTION_STYLES.TABLE_CELL)}
+                    >
                       {materialUtilizado.nombreMaterial}
                     </TableCell>
-                    <TableCell className='text-center'>
+                    <TableCell
+                      className={cn(MATERIALS_SECTION_STYLES.TABLE_CELL)}
+                    >
                       {materialUtilizado.cantidadUtilizada}{' '}
                       {materialUtilizado.unidadMedida}
                     </TableCell>
-                    <TableCell className='text-center'>
-                      <div className='flex space-x-2 justify-center'>
+                    <TableCell
+                      className={cn(MATERIALS_SECTION_STYLES.TABLE_CELL)}
+                    >
+                      <div
+                        className={cn(MATERIALS_SECTION_STYLES.TABLE_ACTIONS)}
+                      >
                         <Button
                           variant='ghost'
                           size='sm'
-                          className='h-8 w-8 p-0 text-gray-400 cursor-not-allowed'
+                          className={cn(
+                            MATERIALS_SECTION_STYLES.ACTION_BUTTON_BASE,
+                            MATERIALS_SECTION_STYLES.ACTION_BUTTON_DISABLED
+                          )}
                           disabled={true}
-                          title='Edición no disponible actualmente'
+                          title={MATERIALS_SECTION_TEXTS.EDIT_BUTTON_TOOLTIP}
                         >
-                          <Edit2 className='h-4 w-4' />
+                          <Edit2
+                            className={cn(MATERIALS_SECTION_STYLES.ACTION_ICON)}
+                          />
                         </Button>
                         <Button
                           variant='ghost'
                           size='sm'
-                          className='h-8 w-8 p-0 text-gray-400 cursor-not-allowed'
+                          className={cn(
+                            MATERIALS_SECTION_STYLES.ACTION_BUTTON_BASE,
+                            MATERIALS_SECTION_STYLES.ACTION_BUTTON_DISABLED
+                          )}
                           disabled={true}
-                          title='Eliminación no disponible actualmente'
+                          title={MATERIALS_SECTION_TEXTS.DELETE_BUTTON_TOOLTIP}
                         >
-                          <Trash2 className='h-4 w-4' />
+                          <Trash2
+                            className={cn(MATERIALS_SECTION_STYLES.ACTION_ICON)}
+                          />
                         </Button>
                       </div>
                     </TableCell>
@@ -223,7 +288,9 @@ export default function MaterialsSectionClient({
 
         {/* Indicador de loading */}
         {isPending && (
-          <div className='text-sm text-blue-600 text-center'>Procesando...</div>
+          <div className={cn(MATERIALS_SECTION_STYLES.LOADING_TEXT)}>
+            {MATERIALS_SECTION_TEXTS.PROCESSING}
+          </div>
         )}
       </CardContent>
 
@@ -234,40 +301,52 @@ export default function MaterialsSectionClient({
       >
         <DialogContent className='sm:max-w-[425px]'>
           <DialogHeader>
-            <DialogTitle>Editar Material</DialogTitle>
+            <DialogTitle>
+              {MATERIALS_SECTION_TEXTS.EDIT_MODAL_TITLE}
+            </DialogTitle>
             <DialogDescription>
-              Actualiza el nombre y la cantidad del material seleccionado.
+              {MATERIALS_SECTION_TEXTS.EDIT_MODAL_DESCRIPTION}
             </DialogDescription>
           </DialogHeader>
 
-          <div className='grid gap-4 py-4'>
-            <div className='grid grid-cols-4 items-center gap-4'>
-              <Label htmlFor='edit-name' className='text-right'>
-                Material:
+          <div className={cn(MATERIALS_SECTION_STYLES.MODAL_FORM_GRID)}>
+            <div className={cn(MATERIALS_SECTION_STYLES.MODAL_FIELD_GRID)}>
+              <Label
+                htmlFor='edit-name'
+                className={cn(MATERIALS_SECTION_STYLES.MODAL_LABEL)}
+              >
+                {MATERIALS_SECTION_TEXTS.EDIT_MODAL_MATERIAL_LABEL}
               </Label>
               <Input
                 id='edit-name'
                 type='text'
                 value={editMaterial.editName}
                 onChange={(e) => editMaterial.setEditName(e.target.value)}
-                className='col-span-3'
-                placeholder='Nombre del material'
+                className={cn(MATERIALS_SECTION_STYLES.MODAL_INPUT)}
+                placeholder={
+                  MATERIALS_SECTION_TEXTS.EDIT_MODAL_NAME_PLACEHOLDER
+                }
                 disabled={isPending}
               />
             </div>
 
-            <div className='grid grid-cols-4 items-center gap-4'>
-              <Label htmlFor='edit-quantity' className='text-right'>
-                Cantidad:
+            <div className={cn(MATERIALS_SECTION_STYLES.MODAL_FIELD_GRID)}>
+              <Label
+                htmlFor='edit-quantity'
+                className={cn(MATERIALS_SECTION_STYLES.MODAL_LABEL)}
+              >
+                {MATERIALS_SECTION_TEXTS.EDIT_MODAL_QUANTITY_LABEL}
               </Label>
               <Input
                 id='edit-quantity'
                 type='number'
                 value={editMaterial.editQuantity}
                 onChange={(e) => editMaterial.setEditQuantity(e.target.value)}
-                className='col-span-3'
-                placeholder='Cantidad'
-                min='0'
+                className={cn(MATERIALS_SECTION_STYLES.MODAL_INPUT)}
+                placeholder={
+                  MATERIALS_SECTION_TEXTS.EDIT_MODAL_QUANTITY_PLACEHOLDER
+                }
+                min={MATERIALS_SECTION_CONFIG.MIN_QUANTITY_MODAL}
                 disabled={isPending}
               />
             </div>
@@ -279,14 +358,16 @@ export default function MaterialsSectionClient({
               onClick={editMaterial.closeEditModal}
               disabled={isPending}
             >
-              Cancelar
+              {MATERIALS_SECTION_TEXTS.EDIT_MODAL_CANCEL}
             </Button>
             <Button
               onClick={editMaterial.handleUpdateMaterial}
               disabled={!editMaterial.canUpdate || isPending}
-              className='bg-blue-600 hover:bg-blue-700'
+              className={cn(MATERIALS_SECTION_STYLES.MODAL_BUTTON_UPDATE)}
             >
-              {editMaterial.isPending ? 'Actualizando...' : 'Actualizar'}
+              {editMaterial.isPending
+                ? MATERIALS_SECTION_TEXTS.EDIT_MODAL_UPDATING
+                : MATERIALS_SECTION_TEXTS.EDIT_MODAL_UPDATE}
             </Button>
           </DialogFooter>
         </DialogContent>
