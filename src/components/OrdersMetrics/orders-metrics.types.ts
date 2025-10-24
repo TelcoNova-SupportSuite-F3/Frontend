@@ -12,6 +12,4 @@ export interface OrdersSummary {
   enProceso: number;
   /** Órdenes finalizadas */
   finalizadas: number;
-  /** Órdenes asignadas */
-  asignadas: number;
 }

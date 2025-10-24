@@ -1,3 +1,5 @@
+'use client';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -9,6 +11,7 @@ import {
   type OrdenTrabajoResponse,
 } from '@/types/orders';
 import { cn } from '@/lib/utils';
+import OrderStatusChanger from '@/components/OrderStatusChanger';
 import {
   LABELS,
   DEFAULT_EMPTY_VALUE,
@@ -113,6 +116,11 @@ export default function OrderBasicInfo({
           label={LABELS.FECHA_ASIGNACION}
           value={formatDateTime(order.fechaAsignacion)}
         />
+
+        {/* Cambiador de estado */}
+        <div className="pt-4 border-t border-gray-200">
+          <OrderStatusChanger order={order} />
+        </div>
       </CardContent>
     </Card>
   );

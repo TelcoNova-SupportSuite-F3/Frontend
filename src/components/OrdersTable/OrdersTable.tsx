@@ -11,9 +11,7 @@ import {
 } from '@/components/ui/table';
 import {
   ESTADO_LABELS,
-  PRIORIDAD_LABELS,
   getEstadoColor,
-  getPrioridadColor,
   formatDateTime,
   type OrdenTrabajoResponse,
 } from '@/types/orders';
@@ -52,23 +50,10 @@ const getStatusBadge = (estado: string) => {
 };
 
 /**
- * Renderiza un badge con la prioridad de la orden
- */
-const getPriorityBadge = (prioridad: string) => {
-  const colorClass = getPrioridadColor(
-    prioridad as keyof typeof PRIORIDAD_LABELS
-  );
-  const label =
-    PRIORIDAD_LABELS[prioridad as keyof typeof PRIORIDAD_LABELS] || prioridad;
-
-  return <Badge className={cn(colorClass)}>{label}</Badge>;
-};
-
-/**
  * Componente de tabla para mostrar órdenes de trabajo
  *
  * Presenta una lista de órdenes en formato tabular con columnas
- * para número, título, cliente, estado, prioridad, fecha y acciones.
+ * para ID, título, estado, fecha inicio, fecha fin y detalle.
  * Incluye estado vacío y accesibilidad mejorada.
  *
  * @example
@@ -148,32 +133,27 @@ export default function OrdersTable({
             </TableCell>
             <TableCell
               role='cell'
-              aria-label={getCellAriaLabel('Cliente', order.clienteNombre)}
-              className={cn(STYLES.CELL_TRUNCATE)}
-              title={order.clienteNombre}
-            >
-              {order.clienteNombre}
-            </TableCell>
-            <TableCell
-              role='cell'
               aria-label={getCellAriaLabel('Estado', order.estado)}
             >
               {getStatusBadge(order.estado)}
             </TableCell>
             <TableCell
               role='cell'
-              aria-label={getCellAriaLabel('Prioridad', order.prioridad)}
+              aria-label={getCellAriaLabel(
+                'Fecha de inicio',
+                formatDateTime(order.fechaInicioTrabajo)
+              )}
             >
-              {getPriorityBadge(order.prioridad)}
+              {formatDateTime(order.fechaInicioTrabajo)}
             </TableCell>
             <TableCell
               role='cell'
               aria-label={getCellAriaLabel(
-                'Fecha de asignación',
-                formatDateTime(order.fechaAsignacion)
+                'Fecha de fin',
+                formatDateTime(order.fechaFinTrabajo)
               )}
             >
-              {formatDateTime(order.fechaAsignacion)}
+              {formatDateTime(order.fechaFinTrabajo)}
             </TableCell>
             <TableCell role='cell'>
               <OrderDetailsButton orderId={order.id.toString()} />

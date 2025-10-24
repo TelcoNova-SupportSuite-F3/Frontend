@@ -1,7 +1,14 @@
 // TypeScript types based on backend DTOs for orders
 
 // Enums from backend
-export type EstadoOrden = 'ASIGNADA' | 'EN_PROCESO' | 'PAUSADA' | 'FINALIZADA';
+export const ESTADO_ORDEN = {
+  ASIGNADA: 'ASIGNADA',
+  EN_PROCESO: 'EN_PROCESO',
+  PAUSADA: 'PAUSADA',
+  FINALIZADA: 'FINALIZADA',
+  CANCELADA: 'CANCELADA',
+} as const;
+export type EstadoOrden = (typeof ESTADO_ORDEN)[keyof typeof ESTADO_ORDEN];
 export type Prioridad = 'BAJA' | 'MEDIA' | 'ALTA' | 'CRITICA';
 export type TipoServicio =
   | 'INSTALACION'
@@ -98,6 +105,15 @@ export interface RegistrarEvidenciaRequest {
   archivo?: File;
 }
 
+/**
+ * Resultado de cambio de estado
+ */
+export interface OrderStatusChangeResult {
+  success: boolean;
+  message: string;
+  data?: OrdenTrabajoResponse;
+}
+
 // Frontend specific types
 export interface OrderSummary {
   total: number;
@@ -139,6 +155,7 @@ export const ESTADO_LABELS: Record<EstadoOrden, string> = {
   EN_PROCESO: 'En Proceso',
   PAUSADA: 'Pausada',
   FINALIZADA: 'Finalizada',
+  CANCELADA: 'Cancelada',
 };
 
 export const PRIORIDAD_LABELS: Record<Prioridad, string> = {
@@ -169,6 +186,8 @@ export const getEstadoColor = (estado: EstadoOrden): string => {
       return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100';
     case 'FINALIZADA':
       return 'bg-green-100 text-green-800 hover:bg-green-100';
+    case 'CANCELADA':
+      return 'bg-gray-100 text-gray-800 hover:bg-gray-100';
     default:
       return 'bg-gray-100 text-gray-800 hover:bg-gray-100';
   }
@@ -193,7 +212,18 @@ export const formatDateTime = (dateString?: string): string => {
   if (!dateString) return '-';
 
   try {
-    const date = new Date(dateString);
+    // Convertir formato "yyyy-MM-dd HH:mm:ss" a ISO 8601
+    // El backend env\u00eda fechas en formato "2025-10-19 14:30:00"
+    // Necesitamos convertirlo a "2025-10-19T14:30:00" para que Date lo parsee correctamente
+    const isoString = dateString.replace(' ', 'T');
+    const date = new Date(isoString);
+
+    // Verificar si la fecha es v\u00e1lida
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date:', dateString);
+      return dateString;
+    }
+
     return date.toLocaleString('es-CO', {
       year: 'numeric',
       month: '2-digit',
@@ -212,7 +242,18 @@ export const formatDate = (dateString?: string): string => {
   if (!dateString) return '-';
 
   try {
-    const date = new Date(dateString);
+    // Convertir formato "yyyy-MM-dd HH:mm:ss" a ISO 8601
+    // El backend env\u00eda fechas en formato "2025-10-19 14:30:00"
+    // Necesitamos convertirlo a "2025-10-19T14:30:00" para que Date lo parsee correctamente
+    const isoString = dateString.replace(' ', 'T');
+    const date = new Date(isoString);
+
+    // Verificar si la fecha es v\u00e1lida
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date:', dateString);
+      return dateString;
+    }
+
     return date.toLocaleDateString('es-CO', {
       year: 'numeric',
       month: '2-digit',

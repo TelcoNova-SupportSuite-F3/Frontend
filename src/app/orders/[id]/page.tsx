@@ -1,9 +1,11 @@
 import { getOrderDetail } from '@/hooks/useOrderDetail';
+import OrderDetailClient from './OrderDetailClient';
 import OrderDetailHeader from '@/components/OrderDetailHeader/OrderDetailHeader';
-import OrderBasicInfo from '@/components/OrderBasicInfo/OrderBasicInfo';
-import OrderActionsSection from '@/components/OrderActionsSection/OrderActionsSection';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage';
-import { cn } from '@/lib/utils';
+
+// Deshabilitar caché para que siempre obtenga datos frescos del servidor
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface OrderDetailPageProps {
   params: Promise<{
@@ -60,11 +62,5 @@ export default async function OrderDetailPage({
   }
 
   // Caso exitoso: Mostrar detalles de la orden
-  return (
-    <main className={cn('space-y-6')}>
-      <OrderDetailHeader order={order} />
-      <OrderBasicInfo order={order} />
-      <OrderActionsSection order={order} />
-    </main>
-  );
+  return <OrderDetailClient order={order} />;
 }

@@ -394,6 +394,86 @@ export async function deleteMaterial(id: string): Promise<MaterialResult> {
   }
 }
 
+/**
+ * Server action para refrescar los datos de órdenes
+ * Revalida la página de órdenes para obtener datos actualizados
+ */
+export async function refreshOrdersAction(): Promise<{ success: boolean }> {
+  try {
+    revalidatePath('/orders');
+    return { success: true };
+  } catch (error) {
+    console.error('Error al refrescar órdenes:', error);
+    return { success: false };
+  }
+}
+
+/**
+ * Server action para cambiar el estado de una orden
+ * @param orderId - ID de la orden
+ * @param newStatus - Nuevo estado a aplicar
+ * @param fechaInicioTrabajo - Fecha de inicio del trabajo (requerida para FINALIZADA)
+ * @param fechaFinTrabajo - Fecha de fin del trabajo (requerida para FINALIZADA)
+ * @returns Resultado del cambio de estado
+ */
+export async function changeOrderStatusAction(
+  orderId: number,
+  newStatus: string,
+  fechaInicioTrabajo?: string,
+  fechaFinTrabajo?: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const token = await getServerToken();
+    if (!token) {
+      return {
+        success: false,
+        message:
+          'No se encontró token de autenticación. Por favor, inicie sesión.',
+      };
+    }
+
+    // Dynamic import to avoid circular dependencies
+    const { updateOrderStatus } = await import('@/services/order.service');
+    const { ESTADO_ORDEN } = await import('@/types/orders');
+
+    const result = await updateOrderStatus(
+      orderId,
+      {
+        nuevoEstado: newStatus as (typeof ESTADO_ORDEN)[keyof typeof ESTADO_ORDEN],
+        fechaInicioTrabajo,
+        fechaFinTrabajo,
+      },
+      token
+    );
+
+    if (result.success) {
+      // Revalidar la página de detalle de la orden
+      revalidatePath(`/orders/${orderId}`);
+      // Revalidar también la lista de órdenes
+      revalidatePath('/orders');
+
+      return {
+        success: true,
+        message: result.message || 'Estado actualizado exitosamente',
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message || 'Error al actualizar el estado',
+      };
+    }
+  } catch (error) {
+    console.error('Error en changeOrderStatusAction:', error);
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Error inesperado al cambiar el estado',
+    };
+  }
+}
+
 // ===== ORDERS DATA SERVER ACTIONS =====
 
 interface Order {

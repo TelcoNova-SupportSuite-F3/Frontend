@@ -26,19 +26,14 @@ export const METRICS_CONFIG: MetricConfig[] = [
     getValue: (summary) => summary.total,
   },
   {
-    title: 'En proceso',
+    title: 'Total en curso',
     id: 'in-progress-orders',
     getValue: (summary) => summary.enProceso,
   },
   {
-    title: 'Finalizadas',
+    title: 'Total finalizadas',
     id: 'completed-orders',
     getValue: (summary) => summary.finalizadas,
-  },
-  {
-    title: 'Asignadas',
-    id: 'assigned-orders',
-    getValue: (summary) => summary.asignadas,
   },
 ] as const;
 
@@ -54,7 +49,7 @@ export const ARIA_LABELS = {
  * Clases de estilo
  */
 export const STYLES = {
-  SECTION: 'grid grid-cols-1 md:grid-cols-4 gap-4',
+  SECTION: 'grid grid-cols-1 md:grid-cols-3 gap-4',
   CARD_HEADER: 'pb-3',
   CARD_TITLE: 'text-sm font-medium text-primary',
   VALUE: 'text-4xl font-bold text-gray-900',

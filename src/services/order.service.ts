@@ -121,7 +121,7 @@ export async function updateOrderStatus(
   try {
     const updatedOrder =
       await makeAuthenticatedServerRequest<OrdenTrabajoResponse>(
-        `${API_CONFIG.ENDPOINTS.ORDERS.UPDATE_STATUS}/${orderId}/estado`,
+        API_CONFIG.ENDPOINTS.ORDERS.UPDATE_STATUS(orderId),
         token,
         {
           method: 'PUT',
@@ -157,7 +157,7 @@ export async function finalizeOrder(
   try {
     const finalizedOrder =
       await makeAuthenticatedServerRequest<OrdenTrabajoResponse>(
-        `${API_CONFIG.ENDPOINTS.ORDERS.FINALIZE}/${orderId}/finalizar`,
+        API_CONFIG.ENDPOINTS.ORDERS.FINALIZE(orderId),
         token,
         {
           method: 'POST',

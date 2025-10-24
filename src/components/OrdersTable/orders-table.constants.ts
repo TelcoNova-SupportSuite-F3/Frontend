@@ -19,39 +19,34 @@ export interface ColumnConfig {
  */
 export const TABLE_COLUMNS: ColumnConfig[] = [
   {
-    id: 'numero',
-    title: 'N° Orden',
+    id: 'id',
+    title: 'ID',
     ariaLabel: 'Número de orden',
   },
   {
     id: 'titulo',
-    title: 'Título',
+    title: 'Título de la orden',
     ariaLabel: 'Título descriptivo de la orden',
   },
   {
-    id: 'cliente',
-    title: 'Cliente',
-    ariaLabel: 'Cliente',
-  },
-  {
     id: 'estado',
-    title: 'Estado',
+    title: 'Estado de la orden',
     ariaLabel: 'Estado actual de la orden',
   },
   {
-    id: 'prioridad',
-    title: 'Prioridad',
-    ariaLabel: 'Prioridad de la orden',
+    id: 'fecha-inicio',
+    title: 'Fecha inicio',
+    ariaLabel: 'Fecha de inicio del trabajo',
   },
   {
-    id: 'fecha',
-    title: 'Fecha asignación',
-    ariaLabel: 'Fecha de asignación',
+    id: 'fecha-fin',
+    title: 'Fecha fin',
+    ariaLabel: 'Fecha de finalización del trabajo',
   },
   {
-    id: 'acciones',
-    title: 'Acciones',
-    ariaLabel: 'Acciones disponibles',
+    id: 'detalle',
+    title: 'Detalle',
+    ariaLabel: 'Ver detalle de la orden',
   },
 ] as const;
 

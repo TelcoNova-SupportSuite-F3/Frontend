@@ -1,19 +1,15 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
-import { updateOrderTimes } from '@/lib/order-actions';
 import { AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
-  ERROR_MESSAGES,
   LABELS,
   ARIA_LABELS,
   STYLES,
   validateEndAfterStart,
-  dateToISOString,
 } from './order-time-tracker.constants';
 
 /**
@@ -37,12 +33,12 @@ interface OrderTimeTrackerProps {
 }
 
 /**
- * Componente para rastrear y actualizar tiempos de trabajo de una orden
+ * Componente para visualizar tiempos de trabajo de una orden
  *
- * Permite visualizar y editar las fechas de inicio y fin del trabajo.
- * La fecha de inicio es de solo lectura por defecto, mientras que la fecha
- * de fin es editable. Incluye validación para asegurar que la fecha de fin
- * sea posterior a la de inicio, y guarda automáticamente los cambios.
+ * Muestra las fechas de inicio y fin del trabajo en modo de solo lectura.
+ * Las fechas son gestionadas automáticamente por el backend:
+ * - Fecha de inicio: Se establece automáticamente al cambiar estado a "En Proceso"
+ * - Fecha de fin: Se establece automáticamente al finalizar la orden
  *
  * @example
  * ```tsx
@@ -50,16 +46,6 @@ interface OrderTimeTrackerProps {
  *   orderId="12345"
  *   initialStartTime={new Date('2024-01-15T08:00:00')}
  *   initialEndTime={new Date('2024-01-15T17:00:00')}
- *   onTimesUpdated={(start, end) => console.log('Fechas actualizadas')}
- * />
- * ```
- *
- * @example
- * // Sin fechas iniciales
- * ```tsx
- * <OrderTimeTracker
- *   orderId="12345"
- *   disableStartEdit={false}
  * />
  * ```
  */
@@ -70,7 +56,7 @@ export default function OrderTimeTracker({
   className,
   onTimesUpdated,
   disableStartEdit = true,
-  disableEndEdit = false,
+  disableEndEdit = true, // Ambas fechas son de solo lectura (automáticas)
 }: OrderTimeTrackerProps) {
   const [startDateTime, setStartDateTime] = useState<Date | undefined>(
     initialStartTime
@@ -79,7 +65,6 @@ export default function OrderTimeTracker({
     initialEndTime
   );
   const [dateError, setDateError] = useState<string>('');
-  const [isPending, startTransition] = useTransition();
 
   /**
    * Valida que las fechas sean coherentes
@@ -97,10 +82,8 @@ export default function OrderTimeTracker({
     setStartDateTime(date);
     validateDates(date, endDateTime);
 
-    // Auto-guardar cuando se cambia la fecha de inicio
-    if (date) {
-      saveTimeChanges(date, endDateTime);
-    }
+    // Notificar al callback si existe
+    onTimesUpdated?.(date, endDateTime);
   };
 
   /**
@@ -113,35 +96,8 @@ export default function OrderTimeTracker({
 
     setEndDateTime(date);
 
-    // Auto-guardar cuando se cambia la fecha de fin
-    if (date && startDateTime) {
-      saveTimeChanges(startDateTime, date);
-    }
-  };
-
-  /**
-   * Guarda los cambios de tiempo en el backend
-   */
-  const saveTimeChanges = (start: Date | undefined, end: Date | undefined) => {
-    startTransition(async () => {
-      try {
-        const result = await updateOrderTimes(
-          orderId,
-          dateToISOString(start),
-          dateToISOString(end)
-        );
-
-        if (result.success) {
-          toast.success(result.message);
-          onTimesUpdated?.(start, end);
-        } else {
-          toast.error(result.message);
-        }
-      } catch (error) {
-        console.error('Error updating times:', error);
-        toast.error(ERROR_MESSAGES.UNEXPECTED_ERROR);
-      }
-    });
+    // Notificar al callback si existe
+    onTimesUpdated?.(startDateTime, date);
   };
 
   return (
@@ -199,23 +155,11 @@ export default function OrderTimeTracker({
                 onChange={handleEndDateChange}
                 placeholder={LABELS.END_PLACEHOLDER}
                 minDate={startDateTime}
-                disabled={!startDateTime || isPending || disableEndEdit}
+                disabled={!startDateTime || disableEndEdit}
                 compact={true}
               />
             </div>
           </div>
-
-          {/* Indicador de guardado */}
-          {isPending && (
-            <div
-              className={cn(STYLES.SAVING_TEXT)}
-              role='status'
-              aria-live='polite'
-              aria-label={ARIA_LABELS.SAVING_STATUS}
-            >
-              {LABELS.SAVING}
-            </div>
-          )}
         </div>
       </CardContent>
     </Card>
