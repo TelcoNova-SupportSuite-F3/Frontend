@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { AlertCircle } from 'lucide-react';
@@ -65,6 +65,19 @@ export default function OrderTimeTracker({
     initialEndTime
   );
   const [dateError, setDateError] = useState<string>('');
+
+  /**
+   * Sincronizar el estado local con los props cuando cambien
+   * Esto permite que las fechas se actualicen cuando el backend
+   * setea fechaInicioTrabajo o fechaFinTrabajo automáticamente
+   */
+  useEffect(() => {
+    setStartDateTime(initialStartTime);
+  }, [initialStartTime]);
+
+  useEffect(() => {
+    setEndDateTime(initialEndTime);
+  }, [initialEndTime]);
 
   /**
    * Valida que las fechas sean coherentes

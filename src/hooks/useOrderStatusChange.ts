@@ -179,10 +179,14 @@ export function useOrderStatusChange(
           showConfirmDialog: false,
         }));
 
-        // Forzar navegación completa para recargar datos del servidor
-        // Añadir timestamp para evitar caché del navegador
-        const currentPath = window.location.pathname;
-        router.push(`${currentPath}?t=${Date.now()}`);
+        // Refrescar la página para obtener los datos actualizados del servidor
+        // router.refresh() sincroniza con los Server Components y obtiene nuevos datos
+        router.refresh();
+
+        // Dar un pequeño delay y recargar si es necesario para asegurar que las fechas se actualicen
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       } else {
         setState((prev) => ({
           ...prev,

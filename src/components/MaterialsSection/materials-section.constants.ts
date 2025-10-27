@@ -13,8 +13,15 @@ export const MATERIALS_SECTION_TEXTS = {
   // Botones
   ADD_BUTTON: 'Agregar Material',
   ADD_BUTTON_LOADING: 'Agregando...',
-  EDIT_BUTTON_TOOLTIP: 'Edición no disponible actualmente',
-  DELETE_BUTTON_TOOLTIP: 'Eliminación no disponible actualmente',
+  EDIT_BUTTON_TOOLTIP: 'Editar cantidad (solo aumentar)',
+  EDIT_DISABLED_TOOLTIP: 'Solo disponible cuando la orden está en proceso',
+  DELETE_BUTTON_TOOLTIP: 'Eliminar material',
+  DELETE_BUTTON_LOADING: 'Eliminando...',
+  DELETE_DISABLED_TOOLTIP: 'Solo disponible cuando la orden está en proceso',
+
+  // Mensajes de error
+  STATE_ERROR_MESSAGE: 'Solo se puede editar la lista de materiales de una orden en proceso.',
+  DISABLED_STATE_TOOLTIP: 'Solo disponible cuando la orden está en proceso',
 
   // Tabla
   TABLE_HEADER_MATERIAL: 'Material',
@@ -26,16 +33,19 @@ export const MATERIALS_SECTION_TEXTS = {
   PROCESSING: 'Procesando...',
 
   // Modal de edición
-  EDIT_MODAL_TITLE: 'Editar Material',
+  EDIT_MODAL_TITLE: 'Editar Cantidad de Material',
   EDIT_MODAL_DESCRIPTION:
-    'Actualiza el nombre y la cantidad del material seleccionado.',
+    'Modifica la cantidad total deseada. Solo puedes aumentar la cantidad actual.',
   EDIT_MODAL_MATERIAL_LABEL: 'Material:',
-  EDIT_MODAL_QUANTITY_LABEL: 'Cantidad:',
+  EDIT_MODAL_QUANTITY_LABEL: 'Cantidad Total:',
+  EDIT_MODAL_QUANTITY_HINT: (current: number, unit: string) => `(Cantidad actual: ${current} ${unit})`,
   EDIT_MODAL_CANCEL: 'Cancelar',
-  EDIT_MODAL_UPDATE: 'Actualizar',
+  EDIT_MODAL_UPDATE: 'Actualizar Cantidad',
   EDIT_MODAL_UPDATING: 'Actualizando...',
   EDIT_MODAL_NAME_PLACEHOLDER: 'Nombre del material',
-  EDIT_MODAL_QUANTITY_PLACEHOLDER: 'Cantidad',
+  EDIT_MODAL_QUANTITY_PLACEHOLDER: 'Cantidad total deseada',
+  EDIT_ERROR_DECREASE: 'No puedes disminuir la cantidad. Para reducir, elimina el material y vuélvelo a agregar.',
+  EDIT_ERROR_NO_CHANGE: 'La cantidad no ha cambiado.',
 
   // Información del material seleccionado
   SELECTED_MATERIAL_CODE: 'Código:',

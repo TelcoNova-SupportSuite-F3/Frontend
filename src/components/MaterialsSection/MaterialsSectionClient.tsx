@@ -29,7 +29,9 @@ import MaterialSearchInput from '@/components/MaterialSearchInput/MaterialSearch
 import type {
   MaterialUtilizadoResponse,
   MaterialResponse,
+  EstadoOrden,
 } from '@/types/orders';
+import { ESTADO_ORDEN } from '@/types/orders';
 import { useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import {
@@ -46,6 +48,8 @@ interface MaterialsSectionProps {
   materialesUtilizados: MaterialUtilizadoResponse[];
   /** ID de la orden de trabajo */
   orderId: string;
+  /** Estado actual de la orden */
+  orderEstado: EstadoOrden;
 }
 
 /**
@@ -68,11 +72,15 @@ interface MaterialsSectionProps {
 export default function MaterialsSectionClient({
   materialesUtilizados,
   orderId,
+  orderEstado,
 }: MaterialsSectionProps) {
+  // Determinar si se pueden editar materiales (solo en estado EN_PROCESO)
+  const canEditMaterials = orderEstado === ESTADO_ORDEN.EN_PROCESO;
+
   // Hooks especializados para cada operación
-  const addMaterial = useAddMaterial(orderId);
-  const editMaterial = useEditMaterial();
-  const deleteMaterial = useDeleteMaterial();
+  const addMaterial = useAddMaterial(orderId, orderEstado);
+  const editMaterial = useEditMaterial(orderId, orderEstado);
+  const deleteMaterial = useDeleteMaterial(orderId, orderEstado);
   const searchMaterials = useSearchMaterials();
 
   // Combinar estados de loading para deshabilitar acciones
@@ -135,7 +143,7 @@ export default function MaterialsSectionClient({
             searchResults={searchMaterials.searchResults}
             isSearching={searchMaterials.isSearching}
             searchError={searchMaterials.searchError}
-            disabled={isPending}
+            disabled={!canEditMaterials || isPending}
           />
 
           {/* Campo de cantidad */}
@@ -162,7 +170,7 @@ export default function MaterialsSectionClient({
               onChange={(e) => addMaterial.setQuantity(e.target.value)}
               min={MATERIALS_SECTION_CONFIG.MIN_QUANTITY}
               max={addMaterial.selectedMaterial?.stockDisponible}
-              disabled={isPending || !addMaterial.selectedMaterial}
+              disabled={!canEditMaterials || isPending || !addMaterial.selectedMaterial}
               className={cn(MATERIALS_SECTION_STYLES.INPUT)}
             />
           </div>
@@ -187,7 +195,8 @@ export default function MaterialsSectionClient({
         <Button
           onClick={addMaterial.handleAddMaterial}
           className={cn(MATERIALS_SECTION_STYLES.ADD_BUTTON)}
-          disabled={!addMaterial.canAdd || isPending}
+          disabled={!canEditMaterials || !addMaterial.canAdd || isPending}
+          title={!canEditMaterials ? MATERIALS_SECTION_TEXTS.DISABLED_STATE_TOOLTIP : ''}
         >
           {addMaterial.isPending
             ? MATERIALS_SECTION_TEXTS.ADD_BUTTON_LOADING
@@ -254,10 +263,16 @@ export default function MaterialsSectionClient({
                           size='sm'
                           className={cn(
                             MATERIALS_SECTION_STYLES.ACTION_BUTTON_BASE,
-                            MATERIALS_SECTION_STYLES.ACTION_BUTTON_DISABLED
+                            !canEditMaterials && MATERIALS_SECTION_STYLES.ACTION_BUTTON_DISABLED,
+                            canEditMaterials && 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                           )}
-                          disabled={true}
-                          title={MATERIALS_SECTION_TEXTS.EDIT_BUTTON_TOOLTIP}
+                          disabled={!canEditMaterials || isPending}
+                          onClick={() => editMaterial.openEditModal(materialUtilizado)}
+                          title={
+                            canEditMaterials
+                              ? MATERIALS_SECTION_TEXTS.EDIT_BUTTON_TOOLTIP
+                              : MATERIALS_SECTION_TEXTS.EDIT_DISABLED_TOOLTIP
+                          }
                         >
                           <Edit2
                             className={cn(MATERIALS_SECTION_STYLES.ACTION_ICON)}
@@ -268,10 +283,16 @@ export default function MaterialsSectionClient({
                           size='sm'
                           className={cn(
                             MATERIALS_SECTION_STYLES.ACTION_BUTTON_BASE,
-                            MATERIALS_SECTION_STYLES.ACTION_BUTTON_DISABLED
+                            !canEditMaterials && MATERIALS_SECTION_STYLES.ACTION_BUTTON_DISABLED,
+                            canEditMaterials && 'text-red-600 hover:text-red-700 hover:bg-red-50'
                           )}
-                          disabled={true}
-                          title={MATERIALS_SECTION_TEXTS.DELETE_BUTTON_TOOLTIP}
+                          disabled={!canEditMaterials || isPending}
+                          onClick={() => deleteMaterial.handleDeleteMaterial(materialUtilizado.id)}
+                          title={
+                            canEditMaterials
+                              ? MATERIALS_SECTION_TEXTS.DELETE_BUTTON_TOOLTIP
+                              : MATERIALS_SECTION_TEXTS.DELETE_DISABLED_TOOLTIP
+                          }
                         >
                           <Trash2
                             className={cn(MATERIALS_SECTION_STYLES.ACTION_ICON)}
@@ -309,46 +330,56 @@ export default function MaterialsSectionClient({
             </DialogDescription>
           </DialogHeader>
 
-          <div className={cn(MATERIALS_SECTION_STYLES.MODAL_FORM_GRID)}>
-            <div className={cn(MATERIALS_SECTION_STYLES.MODAL_FIELD_GRID)}>
-              <Label
-                htmlFor='edit-name'
-                className={cn(MATERIALS_SECTION_STYLES.MODAL_LABEL)}
-              >
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor='edit-name' className="text-sm font-medium">
                 {MATERIALS_SECTION_TEXTS.EDIT_MODAL_MATERIAL_LABEL}
               </Label>
               <Input
                 id='edit-name'
                 type='text'
                 value={editMaterial.editName}
-                onChange={(e) => editMaterial.setEditName(e.target.value)}
-                className={cn(MATERIALS_SECTION_STYLES.MODAL_INPUT)}
-                placeholder={
-                  MATERIALS_SECTION_TEXTS.EDIT_MODAL_NAME_PLACEHOLDER
-                }
-                disabled={isPending}
+                className="bg-gray-50"
+                disabled={true}
+                readOnly
               />
             </div>
 
-            <div className={cn(MATERIALS_SECTION_STYLES.MODAL_FIELD_GRID)}>
-              <Label
-                htmlFor='edit-quantity'
-                className={cn(MATERIALS_SECTION_STYLES.MODAL_LABEL)}
-              >
-                {MATERIALS_SECTION_TEXTS.EDIT_MODAL_QUANTITY_LABEL}
-              </Label>
+            <div className="space-y-2">
+              <div className="flex items-baseline justify-between">
+                <Label htmlFor='edit-quantity' className="text-sm font-medium">
+                  {MATERIALS_SECTION_TEXTS.EDIT_MODAL_QUANTITY_LABEL}
+                </Label>
+                <span className='text-xs text-gray-500'>
+                  {MATERIALS_SECTION_TEXTS.EDIT_MODAL_QUANTITY_HINT(
+                    editMaterial.currentQuantity,
+                    editMaterial.unidadMedida
+                  )}
+                </span>
+              </div>
               <Input
                 id='edit-quantity'
                 type='number'
                 value={editMaterial.editQuantity}
                 onChange={(e) => editMaterial.setEditQuantity(e.target.value)}
-                className={cn(MATERIALS_SECTION_STYLES.MODAL_INPUT)}
                 placeholder={
                   MATERIALS_SECTION_TEXTS.EDIT_MODAL_QUANTITY_PLACEHOLDER
                 }
-                min={MATERIALS_SECTION_CONFIG.MIN_QUANTITY_MODAL}
+                min={editMaterial.currentQuantity}
+                max={editMaterial.currentQuantity + editMaterial.stockDisponible}
                 disabled={isPending}
               />
+              {editMaterial.stockDisponible > 0 && (
+                <p className="text-xs text-blue-600 mt-1">
+                  💡 Stock disponible: <span className="font-semibold">{editMaterial.stockDisponible} {editMaterial.unidadMedida}</span>
+                  {' '}(Máximo total: {editMaterial.currentQuantity + editMaterial.stockDisponible} {editMaterial.unidadMedida})
+                </p>
+              )}
+              {editMaterial.stockDisponible === 0 && (
+                <p className="text-xs text-amber-600 mt-1">
+                  ⚠️ No hay stock adicional disponible. Solo puedes mantener la cantidad actual.
+                </p>
+              )}
             </div>
           </div>
 

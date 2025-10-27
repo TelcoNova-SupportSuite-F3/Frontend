@@ -1,5 +1,5 @@
 import MaterialsSectionClient from './MaterialsSectionClient';
-import type { MaterialUtilizadoResponse } from '@/types/orders';
+import type { MaterialUtilizadoResponse, EstadoOrden } from '@/types/orders';
 
 /**
  * Props para MaterialsSection
@@ -9,6 +9,8 @@ interface MaterialsSectionProps {
   orderId: string;
   /** Lista de materiales utilizados */
   materialesUtilizados: MaterialUtilizadoResponse[];
+  /** Estado actual de la orden */
+  orderEstado: EstadoOrden;
 }
 
 /**
@@ -28,11 +30,13 @@ interface MaterialsSectionProps {
 export default function MaterialsSection({
   orderId,
   materialesUtilizados,
+  orderEstado,
 }: MaterialsSectionProps) {
   return (
     <MaterialsSectionClient
       materialesUtilizados={materialesUtilizados}
       orderId={orderId}
+      orderEstado={orderEstado}
     />
   );
 }

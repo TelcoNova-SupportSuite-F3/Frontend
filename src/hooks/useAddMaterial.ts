@@ -2,7 +2,8 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { addMaterialToOrderAction } from '@/lib/order-actions';
-import type { MaterialResponse } from '@/types/orders';
+import type { MaterialResponse, EstadoOrden } from '@/types/orders';
+import { ESTADO_ORDEN } from '@/types/orders';
 
 interface UseAddMaterialReturn {
   searchTerm: string;
@@ -17,7 +18,7 @@ interface UseAddMaterialReturn {
   clearForm: () => void;
 }
 
-export function useAddMaterial(orderId: string): UseAddMaterialReturn {
+export function useAddMaterial(orderId: string, orderEstado: EstadoOrden): UseAddMaterialReturn {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMaterial, setSelectedMaterial] =
@@ -34,6 +35,12 @@ export function useAddMaterial(orderId: string): UseAddMaterialReturn {
   };
 
   const handleAddMaterial = () => {
+    // Validar que la orden esté en estado EN_PROCESO
+    if (orderEstado !== ESTADO_ORDEN.EN_PROCESO) {
+      toast.error('Solo se puede editar la lista de materiales de una orden en proceso.');
+      return;
+    }
+
     if (!selectedMaterial) {
       toast.error('Por favor selecciona un material de la lista');
       return;

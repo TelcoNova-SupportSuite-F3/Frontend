@@ -86,3 +86,36 @@ export async function addMaterialToOrder(
     };
   }
 }
+
+/**
+ * Deletes a material from an order
+ * @param orderId - The order ID
+ * @param materialUtilizadoId - The ID of the material to delete
+ * @param token - JWT token for authentication
+ * @returns Promise<OrderApiResponse> - Result of the deletion operation
+ */
+export async function deleteMaterialFromOrder(
+  orderId: number,
+  materialUtilizadoId: number,
+  token: string
+): Promise<OrderApiResponse> {
+  try {
+    await makeAuthenticatedServerRequest<void>(
+      API_CONFIG.ENDPOINTS.MATERIALS.DELETE_FROM_ORDER(orderId, materialUtilizadoId),
+      token,
+      {
+        method: 'DELETE',
+      }
+    );
+
+    return {
+      success: true,
+      message: 'Material eliminado exitosamente',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}

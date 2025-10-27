@@ -46,6 +46,10 @@ export const API_CONFIG = {
         `/materiales/ordenes/${ordenId}/materiales`,
       ADD_TO_ORDER: (ordenId: string | number) =>
         `/materiales/ordenes/${ordenId}/materiales`,
+      DELETE_FROM_ORDER: (
+        ordenId: string | number,
+        materialUtilizadoId: string | number
+      ) => `/materiales/ordenes/${ordenId}/materiales/${materialUtilizadoId}`,
     },
   },
 } as const;

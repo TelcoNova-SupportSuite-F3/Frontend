@@ -243,12 +243,96 @@ export async function addMaterialToOrderAction(
     const { addMaterialToOrder } = await import('@/services/materials.service');
     const result = await addMaterialToOrder(orderId, request, token);
 
+    console.log('📝 addMaterialToOrderAction resultado:', result);
+
     if (result.success) {
-      revalidatePath(`/orders/${orderId}`);
+      console.log('✅ Revalidando rutas...');
+      // Revalidar tanto la ruta específica como el layout
+      revalidatePath(`/orders/${orderId}`, 'page');
+      revalidatePath('/orders', 'layout');
+      console.log('✅ Rutas revalidadas');
     }
 
     return result;
   } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+// Server Action: Buscar material por código o nombre para obtener su ID
+export async function searchMaterialByCodeAction(
+  codigoMaterial: string,
+  nombreMaterial: string
+): Promise<{ success: boolean; materialId?: number; stockDisponible?: number; unidadMedida?: string; message?: string }> {
+  try {
+    const token = await getServerAuthToken();
+    if (!token) {
+      return {
+        success: false,
+        message: 'No autorizado. Por favor, inicia sesión nuevamente.',
+      };
+    }
+
+    console.log('🔍 Buscando material:', { codigoMaterial, nombreMaterial });
+
+    // Dynamic import to avoid circular dependencies
+    const { searchMaterials } = await import('@/services/materials.service');
+
+    // Primero intentar buscar por código
+    let result = await searchMaterials(codigoMaterial, token);
+    console.log('📦 Resultado búsqueda por código:', result);
+
+    // Si no encuentra por código, buscar por nombre
+    if (!result.success || !result.data || result.data.length === 0) {
+      console.log('🔍 Intentando buscar por nombre:', nombreMaterial);
+      result = await searchMaterials(nombreMaterial, token);
+      console.log('📦 Resultado búsqueda por nombre:', result);
+    }
+
+    if (!result.success || !result.data || result.data.length === 0) {
+      console.error('❌ No se encontraron materiales');
+      return {
+        success: false,
+        message: 'No se pudo encontrar el material en el catálogo. Intenta buscar manualmente.',
+      };
+    }
+
+    // Buscar coincidencia por código exacto o nombre exacto
+    let material = result.data.find(m => m.codigo === codigoMaterial);
+
+    if (!material) {
+      // Si no encuentra por código exacto, buscar por nombre
+      material = result.data.find(m =>
+        m.nombre.toLowerCase() === nombreMaterial.toLowerCase()
+      );
+    }
+
+    if (!material && result.data.length > 0) {
+      // Si solo hay un resultado, usar ese
+      material = result.data[0];
+      console.log('⚠️ Usando primer resultado:', material);
+    }
+
+    if (!material) {
+      console.error('❌ No se encontró coincidencia exacta');
+      return {
+        success: false,
+        message: `No se encontró el material "${nombreMaterial}" con código "${codigoMaterial}"`,
+      };
+    }
+
+    console.log('✅ Material encontrado:', material);
+    return {
+      success: true,
+      materialId: material.id,
+      stockDisponible: material.stockDisponible,
+      unidadMedida: material.unidadMedida,
+    };
+  } catch (error) {
+    console.error('💥 Error en búsqueda:', error);
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Error desconocido',
@@ -360,8 +444,40 @@ export async function updateMaterial(
   }
 }
 
-// Server Action: Eliminar material
+// Server Action: Eliminar material de una orden
+export async function deleteMaterialFromOrderAction(
+  orderId: number,
+  materialUtilizadoId: number
+): Promise<OrderApiResponse> {
+  try {
+    const token = await getServerAuthToken();
+    if (!token) {
+      return {
+        success: false,
+        message: 'No autorizado. Por favor, inicia sesión nuevamente.',
+      };
+    }
+
+    // Dynamic import to avoid circular dependencies
+    const { deleteMaterialFromOrder } = await import('@/services/materials.service');
+    const result = await deleteMaterialFromOrder(orderId, materialUtilizadoId, token);
+
+    if (result.success) {
+      revalidatePath(`/orders/${orderId}`);
+    }
+
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+// Server Action: Eliminar material (DEPRECATED - usar deleteMaterialFromOrderAction)
 export async function deleteMaterial(id: string): Promise<MaterialResult> {
+  console.log('⚠️ DEPRECATED: deleteMaterial - usar deleteMaterialFromOrderAction');
   console.log('🗑️ Eliminando material:', id);
 
   try {

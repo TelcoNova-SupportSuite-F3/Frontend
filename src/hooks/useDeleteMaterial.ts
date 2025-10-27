@@ -1,24 +1,43 @@
 import { useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { deleteMaterial } from '@/lib/order-actions';
+import { deleteMaterialFromOrderAction } from '@/lib/order-actions';
+import type { EstadoOrden } from '@/types/orders';
+import { ESTADO_ORDEN } from '@/types/orders';
 
 interface UseDeleteMaterialReturn {
   isPending: boolean;
-  handleDeleteMaterial: (id: string) => void;
+  canDelete: boolean;
+  handleDeleteMaterial: (materialUtilizadoId: number) => void;
 }
 
-export function useDeleteMaterial(): UseDeleteMaterialReturn {
+export function useDeleteMaterial(orderId: string, orderEstado: EstadoOrden): UseDeleteMaterialReturn {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const handleDeleteMaterial = (id: string) => {
-    console.log('🚀 Eliminando material:', id);
+  // Solo se puede eliminar materiales si la orden está EN_PROCESO
+  const canDelete = orderEstado === ESTADO_ORDEN.EN_PROCESO;
+
+  const handleDeleteMaterial = (materialUtilizadoId: number) => {
+    // Validar que la orden esté en estado EN_PROCESO
+    if (orderEstado !== ESTADO_ORDEN.EN_PROCESO) {
+      toast.error('Solo se puede editar la lista de materiales de una orden en proceso.');
+      return;
+    }
+
+    console.log('🚀 Eliminando material:', { orderId, materialUtilizadoId });
 
     startTransition(async () => {
       try {
-        const result = await deleteMaterial(id);
+        const result = await deleteMaterialFromOrderAction(
+          Number(orderId),
+          materialUtilizadoId
+        );
 
         if (result.success) {
           toast.success(result.message);
+          // Forzar refresh de la página para mostrar cambios
+          router.refresh();
         } else {
           toast.error(result.message);
         }
@@ -31,6 +50,7 @@ export function useDeleteMaterial(): UseDeleteMaterialReturn {
 
   return {
     isPending,
+    canDelete,
     handleDeleteMaterial,
   };
 }

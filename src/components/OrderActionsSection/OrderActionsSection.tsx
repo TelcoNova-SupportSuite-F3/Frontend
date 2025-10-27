@@ -60,6 +60,7 @@ export default function OrderActionsSection({
         <MaterialsSection
           orderId={order.id.toString()}
           materialesUtilizados={order.materialesUtilizados}
+          orderEstado={order.estado}
         />
       </div>
     </section>
