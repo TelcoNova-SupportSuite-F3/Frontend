@@ -7,7 +7,7 @@ import {
   uploadOrderEvidence,
 } from '@/services/evidence.service';
 import { getServerAuthToken } from '@/lib/auth-server';
-import type { AgregarMaterialRequest, OrderApiResponse } from '@/types/orders';
+import type { AgregarMaterialRequest, OrderApiResponse, EstadoOrden } from '@/types/orders';
 
 // Tipos para las diferentes acciones
 export interface EvidenceUploadResult {
@@ -550,12 +550,11 @@ export async function changeOrderStatusAction(
 
     // Dynamic import to avoid circular dependencies
     const { updateOrderStatus } = await import('@/services/order.service');
-    const { ESTADO_ORDEN } = await import('@/types/orders');
 
     const result = await updateOrderStatus(
       orderId,
       {
-        nuevoEstado: newStatus as (typeof ESTADO_ORDEN)[keyof typeof ESTADO_ORDEN],
+        nuevoEstado: newStatus as EstadoOrden,
         fechaInicioTrabajo,
         fechaFinTrabajo,
       },

@@ -47,7 +47,7 @@ export default function EvidenceUpload({
   onUploadError,
 }: EvidenceUploadProps) {
   const router = useRouter();
-  const { selectedFile, isPending, selectFile, upload } =
+  const { selectedFile: _selectedFile, isPending, selectFile, upload } =
     useEvidenceUpload(orderId);
 
   const handleFileSelect = (file: File) => {

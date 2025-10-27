@@ -98,6 +98,7 @@ export default function MaterialsSectionClient({
     } else {
       searchMaterials.clearSearch();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     addMaterial.searchTerm,
     searchMaterials.performSearch,

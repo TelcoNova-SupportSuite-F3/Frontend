@@ -50,7 +50,7 @@ interface OrderTimeTrackerProps {
  * ```
  */
 export default function OrderTimeTracker({
-  orderId,
+  orderId: _orderId,
   initialStartTime,
   initialEndTime,
   className,
