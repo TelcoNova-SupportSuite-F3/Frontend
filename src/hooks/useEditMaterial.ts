@@ -1,7 +1,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { addMaterialToOrderAction, searchMaterialByCodeAction } from '@/lib/order-actions';
+import { addMaterialToOrderAction, searchMaterialByCodeAction, deleteMaterialFromOrderAction } from '@/lib/order-actions';
 import type { MaterialUtilizadoResponse, EstadoOrden } from '@/types/orders';
 import { ESTADO_ORDEN } from '@/types/orders';
 
@@ -15,7 +15,7 @@ interface UseEditMaterialReturn {
   stockDisponible: number;
   isPending: boolean;
   canEdit: boolean;
-  openEditModal: (material: MaterialUtilizadoResponse) => void;
+  openEditModal: (material: MaterialUtilizadoResponse) => Promise<void>;
   closeEditModal: () => void;
   setEditName: (value: string) => void;
   setEditQuantity: (value: string) => void;
@@ -39,12 +39,47 @@ export function useEditMaterial(orderId: string, orderEstado: EstadoOrden): UseE
 
   const canUpdate = !!(editQuantity.trim() && !isPending);
 
-  const openEditModal = (material: MaterialUtilizadoResponse) => {
+  const openEditModal = async (material: MaterialUtilizadoResponse) => {
+    // Mostrar loading mientras se obtiene el stock
+    const loadingToast = toast.loading('Cargando información del material...');
+
+    // Primero configurar los datos del material
     setEditingMaterial(material);
     setEditName(material.nombreMaterial);
     setEditQuantity(material.cantidadUtilizada.toString());
     setCurrentQuantity(material.cantidadUtilizada);
     setUnidadMedida(material.unidadMedida);
+
+    // Buscar el stock disponible ANTES de abrir el modal
+    try {
+      console.log('🔍 Buscando stock disponible para:', {
+        codigo: material.codigoMaterial,
+        nombre: material.nombreMaterial
+      });
+
+      const searchResult = await searchMaterialByCodeAction(
+        material.codigoMaterial,
+        material.nombreMaterial
+      );
+
+      if (searchResult.success && searchResult.stockDisponible !== undefined) {
+        console.log('✅ Stock encontrado:', searchResult.stockDisponible);
+        setStockDisponible(searchResult.stockDisponible);
+      } else {
+        console.warn('⚠️ No se pudo obtener stock disponible');
+        setStockDisponible(0);
+        toast.warning('No se pudo obtener el stock disponible');
+      }
+    } catch (error) {
+      console.error('❌ Error buscando stock:', error);
+      setStockDisponible(0);
+      toast.error('Error al cargar información del material');
+    }
+
+    // Cerrar el loading toast
+    toast.dismiss(loadingToast);
+
+    // DESPUÉS de tener el stock, abrir el modal
     setIsEditModalOpen(true);
   };
 
@@ -76,46 +111,44 @@ export function useEditMaterial(orderId: string, orderEstado: EstadoOrden): UseE
       return;
     }
 
-    // Calcular la diferencia entre cantidad actual y nueva cantidad
-    const quantityDifference = newQuantity - currentQuantity;
-
     // Validar que no se esté disminuyendo la cantidad
-    if (quantityDifference < 0) {
+    if (newQuantity < currentQuantity) {
       toast.error('No puedes disminuir la cantidad. Para reducir, elimina el material y vuélvelo a agregar.');
       return;
     }
 
     // Validar que haya un cambio
-    if (quantityDifference === 0) {
+    if (newQuantity === currentQuantity) {
       toast.info('La cantidad no ha cambiado.');
       return;
     }
 
-    console.log('🚀 Aumentando cantidad de material:', {
+    console.log('🚀 Actualizando cantidad de material (DELETE + ADD):', {
       orderId,
-      materialId: editingMaterial.id,
+      materialUtilizadoId: editingMaterial.id,
       nombreMaterial: editingMaterial.nombreMaterial,
       cantidadActual: currentQuantity,
-      cantidadDeseada: newQuantity,
-      diferencia: quantityDifference,
+      cantidadNueva: newQuantity,
     });
 
     startTransition(async () => {
+      // Mostrar toast de progreso
+      const loadingToast = toast.loading('Actualizando cantidad...');
+
       try {
-        // WORKAROUND: Buscar el material por código/nombre para obtener su materialId
-        // Ya que MaterialUtilizadoResponse no incluye el materialId del catálogo
-        console.log('🔍 Buscando material:', {
+        // PASO 1: Buscar el material por código/nombre para obtener su materialId
+        console.log('🔍 [1/3] Buscando material:', {
           codigo: editingMaterial.codigoMaterial,
           nombre: editingMaterial.nombreMaterial
         });
 
-        // Buscar el material usando Server Action (pasa código Y nombre)
         const searchResult = await searchMaterialByCodeAction(
           editingMaterial.codigoMaterial,
           editingMaterial.nombreMaterial
         );
 
         if (!searchResult.success || !searchResult.materialId) {
+          toast.dismiss(loadingToast);
           toast.error(searchResult.message || 'No se pudo encontrar el material');
           return;
         }
@@ -123,67 +156,90 @@ export function useEditMaterial(orderId: string, orderEstado: EstadoOrden): UseE
         console.log('✅ Material encontrado:', {
           materialId: searchResult.materialId,
           stockDisponible: searchResult.stockDisponible,
-          unidadMedida: searchResult.unidadMedida
         });
 
-        // Actualizar el stock disponible en el estado
-        if (searchResult.stockDisponible !== undefined) {
-          setStockDisponible(searchResult.stockDisponible);
-        }
-
-        // Validar que hay stock suficiente para el aumento
+        // Validar que hay stock suficiente para la nueva cantidad
         const stockActualDisponible = searchResult.stockDisponible || 0;
-        if (quantityDifference > stockActualDisponible) {
+        const stockNecesario = newQuantity - currentQuantity; // Solo necesitamos la diferencia adicional
+
+        if (stockNecesario > stockActualDisponible) {
+          toast.dismiss(loadingToast);
           toast.error(
             `Stock insuficiente. Solo hay ${stockActualDisponible} ${searchResult.unidadMedida || unidadMedida} disponibles.`,
             {
-              description: `Tienes ${currentQuantity} en uso. Puedes agregar hasta ${stockActualDisponible} más.`,
+              description: `Tienes ${currentQuantity} en uso. Necesitas ${stockNecesario} más pero solo hay ${stockActualDisponible}.`,
               duration: 5000,
             }
           );
           return;
         }
 
-        console.log('📤 Enviando actualización:', {
+        // PASO 2: DELETE del material actual
+        console.log('🗑️ [2/3] Eliminando material actual:', {
+          orderId,
+          materialUtilizadoId: editingMaterial.id
+        });
+
+        const deleteResult = await deleteMaterialFromOrderAction(
+          Number(orderId),
+          editingMaterial.id
+        );
+
+        if (!deleteResult.success) {
+          toast.dismiss(loadingToast);
+          toast.error(deleteResult.message || 'Error al eliminar el material');
+          return;
+        }
+
+        console.log('✅ Material eliminado exitosamente');
+
+        // PASO 3: ADD del material con la nueva cantidad
+        console.log('➕ [3/3] Agregando material con nueva cantidad:', {
           orderId,
           materialId: searchResult.materialId,
-          cantidad: quantityDifference
+          cantidad: newQuantity
         });
 
-        // Ahora podemos usar el materialId para agregar la diferencia
-        const result = await addMaterialToOrderAction(Number(orderId), {
+        const addResult = await addMaterialToOrderAction(Number(orderId), {
           materialId: searchResult.materialId,
-          cantidad: quantityDifference
+          cantidad: newQuantity
         });
 
-        console.log('📥 Respuesta del servidor:', result);
+        toast.dismiss(loadingToast);
 
-        if (result.success) {
-          toast.success('Cantidad actualizada exitosamente');
-          console.log('✅ Cerrando modal y refrescando...');
+        if (addResult.success) {
+          toast.success('Cantidad actualizada exitosamente', {
+            description: `${editingMaterial.nombreMaterial}: ${currentQuantity} → ${newQuantity} ${unidadMedida}`
+          });
+          console.log('✅ Operación completada exitosamente');
           closeEditModal();
 
-          // Forzar refresh con window.location.reload como fallback
-          try {
-            router.refresh();
-            console.log('✅ Router refresh ejecutado');
-
-            // Dar un pequeño delay y recargar la página si es necesario
-            setTimeout(() => {
-              console.log('🔄 Recargando página para asegurar actualización...');
-              window.location.reload();
-            }, 500);
-          } catch (refreshError) {
-            console.error('❌ Error en refresh, recargando página:', refreshError);
+          // Refrescar la página para mostrar cambios
+          router.refresh();
+          setTimeout(() => {
             window.location.reload();
-          }
+          }, 500);
         } else {
-          console.error('❌ Error del servidor:', result.message);
-          toast.error(result.message);
+          // CRÍTICO: DELETE funcionó pero ADD falló
+          toast.error('Error crítico: El material fue eliminado pero no se pudo agregar con la nueva cantidad', {
+            description: 'Por favor, agrega el material manualmente desde el formulario.',
+            duration: 10000,
+          });
+          console.error('❌ [CRÍTICO] Material eliminado pero no agregado:', addResult.message);
+          closeEditModal();
+
+          // Refrescar para mostrar que el material ya no está
+          router.refresh();
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
         }
       } catch (error) {
+        toast.dismiss(loadingToast);
         console.error('💥 Error actualizando cantidad de material:', error);
-        toast.error('Error inesperado al actualizar material');
+        toast.error('Error inesperado al actualizar material', {
+          description: error instanceof Error ? error.message : 'Error desconocido'
+        });
       }
     });
   };
