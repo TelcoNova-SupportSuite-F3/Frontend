@@ -176,35 +176,36 @@ export const TIPO_SERVICIO_LABELS: Record<TipoServicio, string> = {
 };
 
 // Helper functions
+// Colors optimized for WCAG 2.1 contrast compliance (min 4.5:1 for normal text)
 export const getEstadoColor = (estado: EstadoOrden): string => {
   switch (estado) {
     case 'ASIGNADA':
-      return 'bg-blue-100 text-blue-800 hover:bg-blue-100';
+      return 'bg-blue-100 text-blue-900 hover:bg-blue-100';
     case 'EN_PROCESO':
       return 'bg-primary/10 text-primary hover:bg-primary/10';
     case 'PAUSADA':
-      return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100';
+      return 'bg-yellow-100 text-yellow-900 hover:bg-yellow-100';
     case 'FINALIZADA':
-      return 'bg-green-100 text-green-800 hover:bg-green-100';
+      return 'bg-green-100 text-green-900 hover:bg-green-100';
     case 'CANCELADA':
-      return 'bg-gray-100 text-gray-800 hover:bg-gray-100';
+      return 'bg-gray-200 text-gray-900 hover:bg-gray-200';
     default:
-      return 'bg-gray-100 text-gray-800 hover:bg-gray-100';
+      return 'bg-gray-200 text-gray-900 hover:bg-gray-200';
   }
 };
 
 export const getPrioridadColor = (prioridad: Prioridad): string => {
   switch (prioridad) {
     case 'BAJA':
-      return 'bg-gray-100 text-gray-800 hover:bg-gray-100';
+      return 'bg-gray-200 text-gray-900 hover:bg-gray-200';
     case 'MEDIA':
-      return 'bg-blue-100 text-blue-800 hover:bg-blue-100';
+      return 'bg-blue-100 text-blue-900 hover:bg-blue-100';
     case 'ALTA':
-      return 'bg-orange-100 text-orange-800 hover:bg-orange-100';
+      return 'bg-orange-100 text-orange-900 hover:bg-orange-100';
     case 'CRITICA':
-      return 'bg-red-100 text-red-800 hover:bg-red-100';
+      return 'bg-red-100 text-red-900 hover:bg-red-100';
     default:
-      return 'bg-gray-100 text-gray-800 hover:bg-gray-100';
+      return 'bg-gray-200 text-gray-900 hover:bg-gray-200';
   }
 };
 

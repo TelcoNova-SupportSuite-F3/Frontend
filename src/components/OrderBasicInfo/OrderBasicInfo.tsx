@@ -43,13 +43,15 @@ interface InfoFieldProps {
  * Renderiza un campo de información con su etiqueta y valor
  */
 function InfoField({ label, value, className }: InfoFieldProps) {
+  const fieldId = `info-${label.toLowerCase().replace(/\s+/g, '-')}`;
+
   return (
     <div className={className}>
-      <p className={cn(STYLES.LABEL)}>{label}</p>
+      <dt className={cn(STYLES.LABEL)} id={fieldId}>{label}</dt>
       {typeof value === 'string' ? (
-        <p className={cn(STYLES.VALUE)}>{value}</p>
+        <dd className={cn(STYLES.VALUE)} aria-labelledby={fieldId}>{value}</dd>
       ) : (
-        value
+        <dd aria-labelledby={fieldId}>{value}</dd>
       )}
     </div>
   );
@@ -81,11 +83,14 @@ export default function OrderBasicInfo({
       </CardHeader>
       <CardContent className={cn(STYLES.CONTENT_CONTAINER)}>
         {/* Estado, Prioridad, Cliente y Teléfono */}
-        <div className={cn(STYLES.GRID_CONTAINER)}>
+        <dl className={cn(STYLES.GRID_CONTAINER)}>
           <InfoField
             label={LABELS.ESTADO}
             value={
-              <Badge className={cn(getEstadoColor(order.estado))}>
+              <Badge
+                className={cn(getEstadoColor(order.estado))}
+                aria-label={`Estado: ${ESTADO_LABELS[order.estado]}`}
+              >
                 {ESTADO_LABELS[order.estado]}
               </Badge>
             }
@@ -93,7 +98,10 @@ export default function OrderBasicInfo({
           <InfoField
             label={LABELS.PRIORIDAD}
             value={
-              <Badge className={cn(getPrioridadColor(order.prioridad))}>
+              <Badge
+                className={cn(getPrioridadColor(order.prioridad))}
+                aria-label={`Prioridad: ${PRIORIDAD_LABELS[order.prioridad]}`}
+              >
                 {PRIORIDAD_LABELS[order.prioridad]}
               </Badge>
             }
@@ -103,19 +111,25 @@ export default function OrderBasicInfo({
             label={LABELS.TELEFONO}
             value={order.clienteTelefono || emptyValue}
           />
-        </div>
+        </dl>
 
         {/* Descripción */}
-        <InfoField label={LABELS.DESCRIPCION} value={order.descripcion} />
+        <dl>
+          <InfoField label={LABELS.DESCRIPCION} value={order.descripcion} />
+        </dl>
 
         {/* Dirección */}
-        <InfoField label={LABELS.DIRECCION} value={order.direccion} />
+        <dl>
+          <InfoField label={LABELS.DIRECCION} value={order.direccion} />
+        </dl>
 
         {/* Fecha de asignación */}
-        <InfoField
-          label={LABELS.FECHA_ASIGNACION}
-          value={formatDateTime(order.fechaAsignacion)}
-        />
+        <dl>
+          <InfoField
+            label={LABELS.FECHA_ASIGNACION}
+            value={formatDateTime(order.fechaAsignacion)}
+          />
+        </dl>
 
         {/* Cambiador de estado */}
         <div className="pt-4 border-t border-gray-200">

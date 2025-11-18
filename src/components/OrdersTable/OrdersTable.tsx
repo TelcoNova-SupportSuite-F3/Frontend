@@ -46,7 +46,11 @@ const getStatusBadge = (estado: string) => {
   const colorClass = getEstadoColor(estado as keyof typeof ESTADO_LABELS);
   const label = ESTADO_LABELS[estado as keyof typeof ESTADO_LABELS] || estado;
 
-  return <Badge className={cn(colorClass)}>{label}</Badge>;
+  return (
+    <Badge className={cn(colorClass)} aria-label={`Estado: ${label}`}>
+      {label}
+    </Badge>
+  );
 };
 
 /**
