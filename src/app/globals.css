@@ -116,7 +116,22 @@
   * {
     @apply border-border outline-ring/50;
   }
+
+  /* Ensure font-size is responsive and scalable for accessibility */
+  html {
+    font-size: 100%; /* Respects user's browser font size preferences */
+  }
+
   body {
     @apply bg-background text-foreground;
+    /* Support user font size scaling */
+    font-size: 1rem; /* 16px base, scales with html font-size */
+    line-height: 1.5; /* Improve readability */
+  }
+
+  /* Improve focus visibility for keyboard navigation (WCAG 2.1) */
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
   }
 }

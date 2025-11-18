@@ -17,7 +17,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'TelcoNova - Panel de Técnicos',
-  description: 'Sistema de gestión de órdenes para técnicos',
+  description: 'Sistema de gestión de órdenes para técnicos accesible para todos los usuarios',
+  keywords: 'TelcoNova, gestión de órdenes, accesibilidad, WCAG 2.1',
 };
 
 export default function RootLayout({
@@ -28,6 +29,7 @@ export default function RootLayout({
   return (
     <html lang='es' suppressHydrationWarning>
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <script src='/console-silencer.js' async></script>
       </head>
       <body
@@ -35,7 +37,14 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AuthWrapper>{children}</AuthWrapper>
-        <Toaster position='bottom-right' richColors />
+        <Toaster
+          position='bottom-right'
+          richColors
+          toastOptions={{
+            ariaLive: 'polite',
+            role: 'status',
+          }}
+        />
       </body>
     </html>
   );

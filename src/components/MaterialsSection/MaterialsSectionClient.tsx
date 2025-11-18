@@ -206,21 +206,24 @@ export default function MaterialsSectionClient({
 
         {/* Tabla de materiales */}
         <div className={cn(MATERIALS_SECTION_STYLES.TABLE_CONTAINER)}>
-          <Table>
+          <Table role="table" aria-label="Materiales utilizados en la orden">
             <TableHeader>
               <TableRow className={cn(MATERIALS_SECTION_STYLES.TABLE_HEADER)}>
                 <TableHead
                   className={cn(MATERIALS_SECTION_STYLES.TABLE_HEADER_CELL)}
+                  scope="col"
                 >
                   {MATERIALS_SECTION_TEXTS.TABLE_HEADER_MATERIAL}
                 </TableHead>
                 <TableHead
                   className={cn(MATERIALS_SECTION_STYLES.TABLE_HEADER_CELL)}
+                  scope="col"
                 >
                   {MATERIALS_SECTION_TEXTS.TABLE_HEADER_QUANTITY}
                 </TableHead>
                 <TableHead
                   className={cn(MATERIALS_SECTION_STYLES.TABLE_HEADER_CELL)}
+                  scope="col"
                 >
                   {MATERIALS_SECTION_TEXTS.TABLE_HEADER_ACTIONS}
                 </TableHead>
@@ -274,9 +277,11 @@ export default function MaterialsSectionClient({
                               ? MATERIALS_SECTION_TEXTS.EDIT_BUTTON_TOOLTIP
                               : MATERIALS_SECTION_TEXTS.EDIT_DISABLED_TOOLTIP
                           }
+                          aria-label={`Editar material ${materialUtilizado.nombreMaterial}`}
                         >
                           <Edit2
                             className={cn(MATERIALS_SECTION_STYLES.ACTION_ICON)}
+                            aria-hidden="true"
                           />
                         </Button>
                         <Button
@@ -294,9 +299,11 @@ export default function MaterialsSectionClient({
                               ? MATERIALS_SECTION_TEXTS.DELETE_BUTTON_TOOLTIP
                               : MATERIALS_SECTION_TEXTS.DELETE_DISABLED_TOOLTIP
                           }
+                          aria-label={`Eliminar material ${materialUtilizado.nombreMaterial}`}
                         >
                           <Trash2
                             className={cn(MATERIALS_SECTION_STYLES.ACTION_ICON)}
+                            aria-hidden="true"
                           />
                         </Button>
                       </div>
